@@ -23,12 +23,19 @@ type Service struct {
 	PlayerOnly bool
 }
 
+func New(db *sqlite.DB, c RuntimeConfig) (*Service, error) {
+	if e := initialize(db); e != nil {
+		return nil, e
+	}
+	return &Service{DB: db, Config: c}, nil
+}
+
 // EnablePlayerOnly removes empty legacy operator/fee accounts and switches
 // settlement to player-only accounting. Non-empty legacy accounts are refused
 // rather than silently deleting funds or audit history.
 func (s *Service) EnablePlayerOnly() error {
 	e := s.DB.Transaction(func(tx *sqlite.Tx) error {
-		rows, e := tx.Query("SELECT id,balance,locked FROM accounts WHERE id IN ('house','fees')")
+		rows, e := tx.Query("SELECT id,balance,locked FROM accounts WHERE id IN ('house','fees','external')")
 		if e != nil {
 			return e
 		}
@@ -36,26 +43,25 @@ func (s *Service) EnablePlayerOnly() error {
 			if r.Int("balance") != 0 || r.Int("locked") != 0 {
 				return conflict("旧运营方或费用账户仍有余额，请先完成迁移后再启用玩家模式")
 			}
-		}
-		refs, e := tx.One("SELECT COUNT(*) AS n FROM entries WHERE account_id IN ('house','fees')")
-		if e != nil {
-			return e
-		}
-		if refs.Int("n") > 0 {
-			return conflict("旧运营方或费用账户已有历史流水，不能无损删除")
-		}
-		_, e = tx.Exec("DELETE FROM accounts WHERE id IN ('house','fees')")
-		if e == nil {
-			_, e = tx.Exec("INSERT INTO meta(key,value) VALUES('balance_mode','player_only') ON CONFLICT(key) DO UPDATE SET value='player_only'")
-			if e == nil {
-				r, v, ge := getRules(tx)
-				if ge != nil {
-					return ge
+			refs, ee := tx.One("SELECT COUNT(*) AS n FROM entries WHERE account_id=?", r["id"])
+			if ee != nil {
+				return ee
+			}
+			if refs.Int("n") == 0 {
+				if _, ee = tx.Exec("DELETE FROM accounts WHERE id=?", r["id"]); ee != nil {
+					return ee
 				}
-				r.Confirmed = true
-				_, e = tx.Exec("UPDATE settings SET version=?,rules=? WHERE id=1", v, asJSON(r))
 			}
 		}
+		if _, e = tx.Exec("INSERT INTO meta(key,value) VALUES('balance_mode','player_only') ON CONFLICT(key) DO UPDATE SET value='player_only'"); e != nil {
+			return e
+		}
+		r, v, ge := getRules(tx)
+		if ge != nil {
+			return ge
+		}
+		r.Confirmed = true
+		_, e = tx.Exec("UPDATE settings SET version=?,rules=? WHERE id=1", v, asJSON(r))
 		return e
 	})
 	if e != nil {
@@ -63,13 +69,6 @@ func (s *Service) EnablePlayerOnly() error {
 	}
 	s.PlayerOnly = true
 	return nil
-}
-
-func New(db *sqlite.DB, c RuntimeConfig) (*Service, error) {
-	if e := initialize(db); e != nil {
-		return nil, e
-	}
-	return &Service{DB: db, Config: c}, nil
 }
 func now() int64 { return time.Now().UTC().Unix() }
 func newID() string {
@@ -337,7 +336,11 @@ func (s *Service) State() (any, error) {
 		if e != nil {
 			return e
 		}
-		ac, e := tx.Query("SELECT * FROM accounts WHERE role!='external' ORDER BY role,id LIMIT 200")
+		accountQuery := "SELECT * FROM accounts WHERE role!='external' ORDER BY role,id LIMIT 200"
+		if s.PlayerOnly {
+			accountQuery = "SELECT a.*,u.username,u.first_name,u.last_name,u.first_contact,u.last_contact FROM accounts a LEFT JOIN telegram_users u ON u.telegram_user_id=a.telegram_id WHERE a.role='player' ORDER BY a.created_at DESC,a.id LIMIT 200"
+		}
+		ac, e := tx.Query(accountQuery)
 		if e != nil {
 			return e
 		}

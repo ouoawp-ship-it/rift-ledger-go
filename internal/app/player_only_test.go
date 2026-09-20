@@ -82,4 +82,7 @@ func TestPlayerOnlySettlementAndDecimalPayout(t *testing.T) {
 	if a.Balance != 1040 || a.Locked != 0 {
 		t.Fatalf("unexpected player %+v", a)
 	}
+	if summary, e := s.PlayerSummary(50, 0); e != nil || summary == nil {
+		t.Fatalf("player summary: %v", e)
+	}
 }
