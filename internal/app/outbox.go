@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"riftledger/internal/sqlite"
@@ -112,6 +113,52 @@ func (s *Service) roundCard(tx *sqlite.Tx, r Round, heading string) error {
 	}
 	return s.queue(tx, fmt.Sprintf("round-card:%s:%s", r.ID, r.State), s.Config.GroupID, "round:"+r.ID, text, true)
 }
+// Queue a separate announcement so settlement is visible as a new group message.
+// Winning profit excludes returned stake; net change includes all of a player's bets.
+func (s *Service) queueWinners(tx *sqlite.Tx, r Round) error {
+	if s.Config.GroupID == 0 || r.Result == nil {
+		return nil
+	}
+	type winner struct { count, profit, net int64 }
+	totals := map[string]winner{}
+	for _, line := range r.Result.Lines {
+		w := totals[line.AccountID]
+		w.net += line.NetDelta
+		if line.Outcome == "WIN" {
+			w.count++
+			w.profit += line.GameDelta
+		}
+		totals[line.AccountID] = w
+	}
+	ids := []string{}
+	for id, w := range totals {
+		if w.count > 0 { ids = append(ids, id) }
+	}
+	sort.Strings(ids)
+	heading := fmt.Sprintf("峡谷账房｜%s期\n中奖名单\n", r.Number)
+	if len(ids) == 0 {
+		message := "本期无人中奖。"
+		if r.Result.WholeVoid { message = "本期整期流局，无中奖名单。" }
+		return s.queue(tx, "winners:"+r.ID+":0", s.Config.GroupID, "", heading+message, false)
+	}
+	// Bound each page well below Telegram's message limit, including long nicknames.
+	for start := 0; start < len(ids); start += 15 {
+		end := start + 15
+		if end > len(ids) { end = len(ids) }
+		text := heading + fmt.Sprintf("中奖玩家%d人｜第%d/%d页\n中奖盈利不含本金；本期净变化包含全部注单。\n", len(ids), start/15+1, (len(ids)+14)/15)
+		for i := start; i < end; i++ {
+			a, err := getAccount(tx, ids[i])
+			if err != nil { return err }
+			name := []rune(strings.Join(strings.Fields(a.Name), " "))
+			if len(name) > 40 { name = name[:40] }
+			w := totals[ids[i]]
+			text += fmt.Sprintf("\n%d. %s（ID：%d）\n中奖%d笔｜中奖盈利%+d｜本期净变化%+d\n", i+1, string(name), a.TelegramID, w.count, w.profit, w.net)
+		}
+		if err := s.queue(tx, fmt.Sprintf("winners:%s:%d", r.ID, start/15), s.Config.GroupID, "", text, false); err != nil { return err }
+	}
+	return nil
+}
+
 func (s *Service) ClaimOutbox() (*OutboxItem, error) {
 	var out *OutboxItem
 	e := s.DB.Transaction(func(tx *sqlite.Tx) error {

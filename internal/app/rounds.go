@@ -489,6 +489,9 @@ func (s *Service) Settle(tx *sqlite.Tx, id string, in SettleInput) (any, error) 
 		return nil, e
 	}
 	if s.Config.GroupID != 0 {
+		if e = s.queueWinners(tx, r); e != nil {
+			return nil, e
+		}
 		if e = s.queue(tx, "next:"+r.ID, s.Config.GroupID, "", fmt.Sprintf("下一期：%s期\n等待管理员配置敌方五英雄并手动选庄；尚未开放下注。", number), true); e != nil {
 			return nil, e
 		}
