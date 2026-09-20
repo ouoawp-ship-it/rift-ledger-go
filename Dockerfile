@@ -1,6 +1,8 @@
 # No third-party Go modules. CGO links to Debian's SQLite library.
 ARG GO_VERSION=1.27.1
 FROM golang:${GO_VERSION}-bookworm AS build
+ARG GOPROXY=https://goproxy.cn,direct
+ENV GOPROXY=${GOPROXY}
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src

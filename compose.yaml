@@ -4,6 +4,7 @@ services:
       context: .
       args:
         GO_VERSION: "1.27.1"
+        GOPROXY: "${GOPROXY:-https://goproxy.cn,direct}"
     init: true
     restart: unless-stopped
     env_file: .env
