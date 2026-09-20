@@ -7,6 +7,8 @@ const when=v=>Number(v)?new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai
 const states={DRAFT:'待配置',OPEN:'受理中',CLOSED:'已封盘',SETTLED:'已结算',VOID:'流局',RESERVED:'待结算',WIN:'赢',LOSS:'输',BANKER:'庄家',PENDING:'待发送',INFLIGHT:'发送中',SENT:'已处理',FAILED:'发送失败',UNKNOWN:'结果未知'};
 const kindLabel={GAME:'游戏盈亏',FEE:'逐笔费用',FEE_REFUND:'流局退费',ADJUST:'人工调分'};
 let token='',state=null,activeTab='round',formRoundID=null,previewData=null,rulesVersion=0,rulesLoaded=false,stateSeq=0;
+let championCatalog=[];
+const championAliases={ys:'Yasuo',gl:'Garen',dl:'Darius',jz:'Jinx',lq:'LeeSin',ez:'Ezreal',akl:'Akali',lb:'LeBlanc',vn:'Vayne',ky:'Kayle',瑞文:'Riven',亚索:'Yasuo',盖伦:'Garen'};
 let offsets={players:0,history:0,entries:0,messages:0};
 const requestStates={PENDING:'待处理',APPROVED:'已批准',REJECTED:'已拒绝'};
 const pending=new Map();
@@ -48,11 +50,11 @@ async function refreshState(force=false){
  const r=state.active_round;$('round-state').textContent=r?r.number+'期 · '+states[r.state]:'尚无期次';$('round-version').textContent=r?'本期规则版本 '+r.rules_version+'｜修订 '+r.revision:'';
  if((r?.id||'')!==formRoundID||force){
   formRoundID=r?.id||'';$('number').value=r?.number||state.suggested_number;
-  for(let i=1;i<=5;i++){$('hero-id-'+i).value=r?.heroes?.[i-1]?.id||'';$('hero-name-'+i).value=r?.heroes?.[i-1]?.name||'';$('banker-'+i).checked=r?.banker===i;$('damage-'+i).value='';}
+  for(let i=1;i<=5;i++){$('hero-id-'+i).value=r?.heroes?.[i-1]?.id||'';$('hero-search-'+i).value=r?.heroes?.[i-1]?.name||'';$('hero-name-'+i).value=r?.heroes?.[i-1]?.name||'';setChampionAvatar(i,r?.heroes?.[i-1]?.id);$('banker-'+i).checked=r?.banker===i;$('damage-'+i).value='';}
   $('duration').value='';previewData=null;$('preview-result').innerHTML='<p class="hint">封盘后填写实际时长与五个原始伤害，先预览再确认。</p>';
  }
  $('round-bets').innerHTML=table(['时间','玩家账户','位置','本金','预定费用','状态','注单ID'],state.bets.map(b=>[esc(when(b.created_at)),esc(b.account_id),esc(b.position),tdnum(b.stake),tdnum(b.fee),esc(states[b.state]),'<code>'+esc(b.id)+'</code>']));
- if(!rulesLoaded){renderRules();rulesLoaded=true;}controls();
+ if(!rulesLoaded){renderRules();rulesLoaded=true;}if(!championCatalog.length){try{const d=await api('champions');championCatalog=d.champions||[]}catch{}}controls();
 }
 function renderRules(){const r=state.rules;rulesVersion=state.rules_version;$('rules-version').textContent='后端模板版本：'+rulesVersion;
  r.payout.forEach((v,i)=>$('odd-'+i).value=v);$('min-stake').value=r.min_stake;$('max-stake').value=r.max_stake;
@@ -71,7 +73,12 @@ async function loadMessages(){const page=offsets.messages,rows=await api('outbox
 async function loadAudit(){const rows=await api('audit?limit=50');$('audit-table').innerHTML=table(['时间','操作人','动作','业务号','内容'],rows.map(a=>[esc(when(a.created_at)),esc(a.actor),esc(a.action),'<code>'+esc(a.request_key)+'</code>','<div class="detail">'+esc(a.detail)+'</div>']));}
 function nonempty(v,msg){if(!v)throw new Error(msg);return v;}
 
-$('hero-inputs').innerHTML=Array.from({length:5},(_,i)=>{const n=i+1;return '<tr><td>'+n+'号</td><td><input type="text" id="hero-id-'+n+'" maxlength="40" placeholder="例如 Aatrox"></td><td><input type="text" id="hero-name-'+n+'" maxlength="40" placeholder="输入本场敌方英雄"></td><td><label><input type="radio" name="banker" id="banker-'+n+'" value="'+n+'">选为庄家</label></td></tr>';}).join('');
+function setChampionAvatar(n,id){const c=championCatalog.find(x=>x.id===id);const img=$('hero-avatar-'+n);if(!img)return;if(c&&c.image_url){img.src=c.image_url;img.hidden=false}else{img.removeAttribute('src');img.hidden=true}}
+function championMatches(query){query=query.trim().toLowerCase();if(!query)return[];const alias=championAliases[query]||query;return championCatalog.filter(c=>[c.name,c.english_name,c.id,c.key].some(v=>String(v||'').toLowerCase().includes(alias))).slice(0,12)}
+function chooseChampion(n,c){$('hero-id-'+n).value=c.id;$('hero-search-'+n).value=c.name+'（'+c.english_name+'）';$('hero-name-'+n).value=c.name;setChampionAvatar(n,c.id);$('hero-results-'+n).replaceChildren()}
+function showChampionResults(n){const box=$('hero-results-'+n);box.replaceChildren();for(const c of championMatches($('hero-search-'+n).value)){const b=document.createElement('button');b.type='button';b.className='champion-option';b.innerHTML='<img src="'+esc(c.image_url)+'" alt=""><span>'+esc(c.name)+'<small>'+esc(c.english_name)+' · '+esc(c.id)+'</small></span>';b.addEventListener('click',()=>chooseChampion(n,c));box.appendChild(b)}}
+$('hero-inputs').innerHTML=Array.from({length:5},(_,i)=>{const n=i+1;return '<tr><td>'+n+'号</td><td class="champion-picker"><input type="hidden" id="hero-id-'+n+'"><input type="search" id="hero-search-'+n+'" autocomplete="off" maxlength="40" placeholder="输入亚、Yasuo或ys"><div class="champion-results" id="hero-results-'+n+'"></div></td><td><input type="text" id="hero-name-'+n+'" readonly placeholder="从搜索结果选择"><img class="champion-avatar" id="hero-avatar-'+n+'" alt="已选英雄头像" hidden></td><td><label><input type="radio" name="banker" id="banker-'+n+'" value="'+n+'">选为庄家</label></td></tr>';}).join('');
+for(let n=1;n<=5;n++){$('hero-search-'+n).addEventListener('input',()=>{$('hero-id-'+n).value='';$('hero-name-'+n).value='';setChampionAvatar(n,'');showChampionResults(n)});$('hero-search-'+n).addEventListener('focus',()=>showChampionResults(n));}
 $('damage-inputs').innerHTML=Array.from({length:5},(_,i)=>'<label>'+(i+1)+'号原始伤害<input id="damage-'+(i+1)+'" inputmode="numeric" maxlength="6" placeholder="不要人为补零"></label>').join('');
 $('odds-inputs').innerHTML=Array.from({length:11},(_,i)=>'<tr><td>'+(i===0?'没牛':i===10?'牛牛':'牛'+i)+'</td><td><input id="odd-'+i+'" type="number" min="1" max="100" required></td></tr>').join('');
 $('duration').addEventListener('input',invalidatePreview);document.querySelectorAll('#damage-inputs input').forEach(x=>x.addEventListener('input',invalidatePreview));
