@@ -9,7 +9,7 @@ RUN CGO_ENABLED=1 go test ./... \
     && CGO_ENABLED=1 go build -trimpath -ldflags="-s -w" -o /out/rift-ledger-go ./cmd/server
 
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends libsqlite3-0 sqlite3 ca-certificates tzdata curl \
+RUN apt-get update && apt-get install -y --no-install-recommends libsqlite3-0 sqlite3 ca-certificates tzdata curl fonts-noto-cjk \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 riftledger \
     && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin riftledger \

@@ -240,23 +240,28 @@ func (c *Client) sendMedia(ctx context.Context, s *app.Service, item app.OutboxI
 	if len(item.Payload.Media) != 5 || s.Champions == nil {
 		e = errors.New("英雄缓存不可用")
 	} else {
-		for i, p := range item.Payload.Media {
+		photos := make([][]byte, 0, len(item.Payload.Media))
+		for _, p := range item.Payload.Media {
 			var data []byte
 			data, e = s.Champions.Image(p.Version, p.ID)
 			if e != nil {
 				break
 			}
-			name := fmt.Sprintf("photo%d", i)
-			var part io.Writer
-			part, e = writer.CreateFormFile(name, p.ID+".png")
-			if e != nil {
-				break
+			photos = append(photos, data)
+		}
+		if e == nil {
+			var composite []byte
+			composite, e = composeHeroImage(photos, item.Payload.Media)
+			if e == nil {
+				part, createErr := writer.CreateFormFile("photo", "heroes.png")
+				e = createErr
+				if e == nil {
+					_, e = part.Write(composite)
+				}
 			}
-			_, e = part.Write(data)
-			if e != nil {
-				break
+			if e == nil {
+				media = append(media, map[string]string{"type": "photo", "media": "attach://photo", "caption": item.Payload.Text})
 			}
-			media = append(media, map[string]string{"type": "photo", "media": "attach://" + name, "caption": p.Caption})
 		}
 	}
 	localFailure := e != nil
@@ -295,7 +300,7 @@ func (c *Client) sendMedia(ctx context.Context, s *app.Service, item app.OutboxI
 			}
 		}
 	}
-	if e == nil && len(result) == 5 {
+	if e == nil && len(result) == 1 {
 		valid := true
 		for _, r := range result {
 			if r.MessageID <= 0 {
