@@ -124,7 +124,7 @@ func (s *Service) HandleUpdate(u TGUpdate) error {
 			if row == nil {
 				name := strings.TrimSpace(user.FirstName)
 				if name == "" {
-					name = "待开通玩家"
+					name = "待确认玩家"
 				}
 				if len([]rune(name)) > 60 {
 					name = string([]rune(name)[:60])
@@ -155,12 +155,12 @@ func (s *Service) HandleUpdate(u TGUpdate) error {
 			} else if strings.HasPrefix(text, "上") || strings.HasPrefix(text, "下") || strings.HasPrefix(text, "回") {
 				reply = "申请金额必须为1至1000000000000的整数，不接受负数、小数或其它内容。"
 			} else if !a.Enabled {
-				reply = fmt.Sprintf("您还没有加入战斗，或账户已停用。\n您的Telegram ID：%d\n请联系管理员开通，开通不会自动赠送积分。", user.ID)
+				reply = fmt.Sprintf("您还没有加入战斗，或账户已停用。\n您的Telegram ID：%d\n请先提交上分申请，管理员批准后会自动开通；上分不会自动到账。", user.ID)
 				if s.Config.SupportUsername != "" {
 					reply += "\n客服：@" + s.Config.SupportUsername
 				}
 				if s.Config.NotifyAdminID != 0 {
-					if e = s.queue(tx, "join:"+id, s.Config.NotifyAdminID, "", fmt.Sprintf("待开通玩家\nID：%d\n称呼：%s\n请在网页后台核实后开通；不要仅凭显示名认人。", user.ID, a.Name), false); e != nil {
+					if e = s.queue(tx, "join:"+id, s.Config.NotifyAdminID, "", fmt.Sprintf("待确认玩家\nID：%d\n称呼：%s\n可引导玩家提交上分申请，批准上分后会自动开通；不要仅凭显示名认人。", user.ID, a.Name), false); e != nil {
 						return e
 					}
 				}

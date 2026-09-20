@@ -5,6 +5,9 @@
 <header><strong>峡谷账房</strong><span>Go 服务端 · 英雄联盟伤害牛牛</span><span id="connection">未连接</span></header>
 <section id="login-box"><form id="login-form"><label>管理员密钥 <input id="token" type="password" autocomplete="off" minlength="32" maxlength="128" required size="44"></label><button type="submit">连接管理服务</button></form><small>密钥仅保留在当前页面内存，不写入浏览器存储。请通过 SSH 隧道或 HTTPS 使用。</small></section>
 <div id="notice" role="status" aria-live="polite">输入部署时生成的 ADMIN_TOKEN。</div>
+<div id="request-alert" class="request-alert" hidden role="dialog" aria-modal="true" aria-labelledby="request-alert-title">
+<div class="request-alert-card"><button type="button" id="request-alert-close" class="request-alert-close" aria-label="关闭提醒">×</button><div class="request-alert-kicker">上下分申请提醒</div><h2 id="request-alert-title">收到新的上下分申请</h2><p id="request-alert-body"></p><div class="actions"><button type="button" id="request-alert-view" class="primary-action">查看申请</button><button type="button" id="request-alert-dismiss">稍后处理</button></div></div>
+</div>
 <main id="workspace" hidden>
 <nav><button data-tab="round">本期控制</button><button data-tab="players">玩家与积分</button><button data-tab="rules">规则设置</button><button data-tab="requests">上下分请求</button><button data-tab="champions">英雄数据</button><button data-tab="bot">机器人设置</button><button data-tab="history">历史与流水</button><button data-tab="messages">发送记录</button><button data-tab="calculator">伤害计算器</button><button data-tab="checks">运行检查</button><button id="refresh">刷新</button><button id="logout">退出</button></nav>
 <section class="page" id="page-round">
@@ -25,7 +28,7 @@
 <fieldset><legend>本期最近200笔注单</legend><div id="round-bets" class="table-wrap"></div></fieldset>
 </section>
 <section class="page" id="page-players" hidden>
-<fieldset><legend>人工开通／停用玩家</legend><form id="player-form" class="line"><label>Telegram ID <input id="player-tg" inputmode="numeric" required></label><label>称呼 <input id="player-name" required maxlength="60"></label><label><input type="checkbox" id="player-enabled" checked>允许下注</label><button type="submit">保存玩家</button></form><small>身份以真实 Telegram ID 为准。开通不赠分，加分不自动开通；停用不影响已受理注单正常结算。</small></fieldset>
+<fieldset><legend>玩家资格</legend><p class="hint">玩家首次上分申请获批后自动成为真实玩家并获得下注资格。停用玩家不会影响已受理注单；之后再次获批上分时会自动恢复资格。</p></fieldset>
 <fieldset><legend>人工上下分</legend><form id="adjust-form"><div class="line"><label>账户 <input id="adjust-id" placeholder="tg:123456789" required size="25"></label><label>变化量 <input id="adjust-delta" type="number" step="1" required placeholder="加分正数，减分负数"></label></div><div class="line"><label>备注 <input id="adjust-note" required maxlength="200" size="50"></label><button type="submit">确认调分</button></div></form><small>玩家盈亏按游戏流水记录；玩家模式不设置运营方承付账户和独立费用账户。</small></fieldset>
 <div class="line"><button id="players-prev">上一页</button><button id="players-next">下一页</button><span id="players-page"></span></div><div id="players-table" class="table-wrap"></div>
 </section>

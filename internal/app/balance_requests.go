@@ -27,7 +27,7 @@ func ParseBalanceRequest(text string) (string, int64, bool) {
 }
 
 func (s *Service) requestBalance(tx *sqlite.Tx, u TGUpdate, a Account, kind string, amount int64) (string, error) {
-	if !a.Enabled {
+	if !a.Enabled && kind == "DEBIT" {
 		return "您还没有开通积分账户，请先联系管理员。", nil
 	}
 	duplicate, e := tx.One("SELECT id FROM balance_requests WHERE account_id=? AND kind=? AND amount=? AND state='PENDING'", a.ID, kind, amount)
@@ -96,6 +96,11 @@ func (s *Service) ResolveBalanceRequest(tx *sqlite.Tx, id int64, action, note st
 		}
 		if _, e = s.Adjust(tx, r["account_id"], delta, "申请审批："+note, fmt.Sprintf("balance-request:%d", id)); e != nil {
 			return nil, e
+		}
+		if r["kind"] == "CREDIT" {
+			if _, e = tx.Exec("UPDATE accounts SET enabled=1 WHERE id=?", r["account_id"]); e != nil {
+				return nil, e
+			}
 		}
 	}
 	if _, e = tx.Exec("UPDATE balance_requests SET state=?,processed_at=?,note=? WHERE id=? AND state='PENDING'", action, now(), note, id); e != nil {
