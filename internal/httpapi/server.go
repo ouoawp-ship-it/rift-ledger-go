@@ -148,6 +148,10 @@ func (a *API) route(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		limit, offset := pagination(r)
 		switch path {
+		case "api/bot-connection":
+			v, e := s.BotConnection()
+			a.respond(w, v, e)
+			return
 		case "api/balance-requests":
 			v, e := s.BalanceRequests(limit, offset)
 			a.respond(w, v, e)

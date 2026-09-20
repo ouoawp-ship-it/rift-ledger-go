@@ -61,8 +61,10 @@ func (s *Service) Offset() (int64, error) {
 	return n, e
 }
 func (s *Service) BotStatus(text string) error {
-	_, e := s.DB.Exec("INSERT INTO meta(key,value) VALUES('bot_status',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", text)
-	return e
+	return s.DB.Transaction(func(tx *sqlite.Tx) error {
+		_, e := tx.Exec("INSERT INTO meta(key,value) VALUES('bot_status',?),('bot_status_at',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", text, strconv.FormatInt(now(), 10))
+		return e
+	})
 }
 func (s *Service) BindBot(botID int64) error {
 	return s.DB.Transaction(func(tx *sqlite.Tx) error {

@@ -63,9 +63,20 @@ func TestAuthenticationAndCSRF(t *testing.T) {
 		t.Fatal(w.Code)
 	}
 }
+func TestBotConnectionRequiresAuthentication(t *testing.T) {
+	h := server(t)
+	if w := request(h, "GET", "/api/bot-connection", "", "", "", ""); w.Code != 401 {
+		t.Fatal(w.Code)
+	}
+	w := request(h, "GET", "/api/bot-connection", "", testToken, "", "")
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"state":"disabled"`) || !strings.Contains(w.Body.String(), `"checked_at":`) {
+		t.Fatal(w.Body.String())
+	}
+}
+
 func TestStaticAndHealth(t *testing.T) {
 	h := server(t)
-	for _, path := range []string{"/", "/app.js", "/style.css", "/healthz"} {
+	for _, path := range []string{"/", "/app.js", "/bot-connection.js", "/style.css", "/healthz"} {
 		w := request(h, "GET", path, "", "", "", "")
 		if w.Code != 200 {
 			t.Fatalf("%s %d", path, w.Code)

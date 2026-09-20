@@ -3,6 +3,19 @@
 
 .champion-picker{position:relative;min-width:260px}.champion-picker input[type=search]{width:100%}.champion-results{position:absolute;left:0;right:0;top:100%;z-index:10;background:#fff;border:1px solid #555;max-height:420px;overflow:auto}.champion-option{display:flex;align-items:center;gap:8px;width:100%;border:0;border-bottom:1px solid #ddd;background:#fff;text-align:left;padding:6px;cursor:pointer}.champion-option:hover,.champion-option:focus{background:#eee}.champion-option img{width:32px;height:32px;object-fit:cover}.champion-option small{display:block;color:#666}.champion-avatar{width:42px;height:42px;object-fit:cover;vertical-align:middle;margin-left:8px;border:1px solid #777}
 .damage-result{min-height:1.4em;color:#555;font-size:12px;font-weight:600}
+.connection-group{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-left:auto;font-size:12px}
+header .connection-group #connection{width:auto;margin:0}
+.bot-connection{--status-color:#64748b;display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border:1px solid #cbd5e1;border-radius:20px;background:#fff;color:var(--status-color);font-weight:600}
+.bot-connection-dot{width:9px;height:9px;flex:none;border-radius:50%;background:var(--status-color)}
+.bot-connection[data-state=online]{--status-color:#15803d;border-color:#bbdfc8;background:#f0fdf4}
+.bot-connection[data-state=online] .bot-connection-dot{animation:bot-breathe 2s ease-in-out infinite}
+.bot-connection[data-state=connecting]{--status-color:#92400e;border-color:#f3d39b;background:#fffbeb}
+.bot-connection[data-state=error],.bot-connection[data-state=stale],.bot-connection[data-state=unreachable]{--status-color:#b91c1c;border-color:#fecaca;background:#fef2f2}
+.bot-connection-panel{margin:12px 0;padding:14px 16px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px}
+#bot-connection-detail{overflow-wrap:anywhere}
+@keyframes bot-breathe{0%,100%{opacity:1;box-shadow:0 0 0 2px rgba(21,128,61,.12)}50%{opacity:.55;box-shadow:0 0 0 6px rgba(21,128,61,.2)}}
+@media(max-width:800px){.connection-group{width:100%;margin-left:0;gap:10px}}
+@media(prefers-reduced-motion:reduce){.bot-connection[data-state=online] .bot-connection-dot{animation:none}}
 .request-alert{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:rgba(17,24,39,.42)}
 .request-alert[hidden]{display:none!important}
 .request-alert-card{position:relative;width:min(460px,100%);padding:28px 30px 24px;border:1px solid #f0a3be;border-top:6px solid #b42363;border-radius:12px;background:#fff;box-shadow:0 18px 60px rgba(17,24,39,.28)}
