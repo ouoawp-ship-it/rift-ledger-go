@@ -12,7 +12,7 @@ services:
       LISTEN_ADDR: 0.0.0.0:8080
       ALLOW_PUBLIC_HTTP: "true"
     ports:
-      - "127.0.0.1:${HOST_PORT:-8080}:8080"
+      - "${HOST_PORT:-8080}:8080"
     volumes:
       - rift_data:/data
     read_only: true

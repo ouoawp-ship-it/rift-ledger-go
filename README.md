@@ -161,7 +161,7 @@ cd /opt/rift-ledger/rift-ledger-go
 ./scripts/install.sh
 ```
 
-`install.sh` 会安装 Docker 官方 apt 仓库中的 Docker Engine/Compose plugin（不会执行不可审计的远程脚本），创建 `data/`、`backups/`，初始化 `.env`，构建并等待 `/healthz`。已有 `.env`、数据库和运行配置不会覆盖。后台默认通过 `http://127.0.0.1:8080/` 访问，建议使用 SSH 隧道：`ssh -L 8080:127.0.0.1:8080 user@server`。
+`install.sh` 会安装 Docker 官方 apt 仓库中的 Docker Engine/Compose plugin（不会执行不可审计的远程脚本），创建 `data/`、`backups/`，初始化 `.env`，构建并等待 `/healthz`。已有 `.env`、数据库和运行配置不会覆盖。后台通过 `http://服务器IP:8080/` 访问；公网使用时应在防火墙限制管理来源，并在反向代理后启用 HTTPS。
 
 后台“机器人设置”可保存 BotFather Token、机器人用户名、群 ID、Topic ID、管理员 TG ID 和客服用户名。Token 只显示掩码；保存会先备份并原子替换 `data/runtime-settings.json`，服务重启后生效。可单独测试 `getMe`，测试群发送必须人工点击。运行配置优先级为：运行配置文件 > `.env` 初始值；`.env` 只用于第一次启动配置。
 
