@@ -74,9 +74,21 @@ async function loadAudit(){const rows=await api('audit?limit=50');$('audit-table
 function nonempty(v,msg){if(!v)throw new Error(msg);return v;}
 
 function setChampionAvatar(n,id){const c=championCatalog.find(x=>x.id===id);const img=$('hero-avatar-'+n);if(!img)return;if(c&&c.image_url){img.src=c.image_url;img.hidden=false}else{img.removeAttribute('src');img.hidden=true}}
-function championMatches(query){query=query.trim().toLowerCase();if(!query)return[];const alias=String(championAliases[query]||query).toLowerCase();return championCatalog.filter(c=>[c.name,c.english_name,c.id,c.key].some(v=>String(v||'').toLowerCase().includes(alias))).slice(0,12)}
+function normalizeChampionText(value){return String(value??'').normalize('NFKC').trim().toLocaleLowerCase('zh-CN')}
+function championMatches(query){
+ query=normalizeChampionText(query);if(!query)return[];
+ const alias=normalizeChampionText(championAliases[query]||query);
+ return championCatalog
+  .filter(c=>[c.name,c.title,c.english_name,c.id,c.key].some(v=>normalizeChampionText(v).includes(alias)))
+  .sort((a,b)=>{
+   const aName=normalizeChampionText(a.name),bName=normalizeChampionText(b.name);
+   const aStarts=aName.startsWith(query)?0:aName.includes(query)?1:2;
+   const bStarts=bName.startsWith(query)?0:bName.includes(query)?1:2;
+   return aStarts-bStarts||aName.localeCompare(bName,'zh-CN');
+  });
+}
 function chooseChampion(n,c){$('hero-id-'+n).value=c.id;$('hero-search-'+n).value=c.name+'（'+c.english_name+'）';$('hero-name-'+n).value=c.name;setChampionAvatar(n,c.id);$('hero-results-'+n).replaceChildren()}
-function showChampionResults(n){const box=$('hero-results-'+n);box.replaceChildren();for(const c of championMatches($('hero-search-'+n).value)){const b=document.createElement('button');b.type='button';b.className='champion-option';b.innerHTML='<img src="'+esc(c.image_url)+'" alt=""><span>'+esc(c.name)+'<small>'+esc(c.english_name)+' · '+esc(c.id)+'</small></span>';b.addEventListener('click',()=>chooseChampion(n,c));box.appendChild(b)}}
+function showChampionResults(n){const box=$('hero-results-'+n);box.replaceChildren();for(const c of championMatches($('hero-search-'+n).value)){const b=document.createElement('button');b.type='button';b.className='champion-option';b.innerHTML='<img src="'+esc(c.image_url)+'" alt=""><span>'+esc(c.name)+'<small>'+(c.title?esc(c.title)+' · ':'')+esc(c.english_name)+' · '+esc(c.id)+'</small></span>';b.addEventListener('click',()=>chooseChampion(n,c));box.appendChild(b)}}
 $('hero-inputs').innerHTML=Array.from({length:5},(_,i)=>{const n=i+1;return '<tr><td>'+n+'号</td><td class="champion-picker"><input type="hidden" id="hero-id-'+n+'"><input type="search" id="hero-search-'+n+'" autocomplete="off" maxlength="40" placeholder="输入亚、Yasuo或ys"><div class="champion-results" id="hero-results-'+n+'"></div></td><td><input type="text" id="hero-name-'+n+'" readonly placeholder="从搜索结果选择"><img class="champion-avatar" id="hero-avatar-'+n+'" alt="已选英雄头像" hidden></td><td><label><input type="radio" name="banker" id="banker-'+n+'" value="'+n+'">选为庄家</label></td></tr>';}).join('');
 for(let n=1;n<=5;n++){$('hero-search-'+n).addEventListener('input',()=>{$('hero-id-'+n).value='';$('hero-name-'+n).value='';setChampionAvatar(n,'');showChampionResults(n)});$('hero-search-'+n).addEventListener('focus',()=>showChampionResults(n));}
 $('damage-inputs').innerHTML=Array.from({length:5},(_,i)=>'<label>'+(i+1)+'号原始伤害<input id="damage-'+(i+1)+'" inputmode="numeric" maxlength="6" placeholder="不要人为补零"></label>').join('');
@@ -109,7 +121,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||
 });
 
 async function loadRequests(){const d=await api('balance-requests?limit=100');$('requests-count').textContent='待处理上分：'+d.counts.credit+'｜待处理下分：'+d.counts.debit;$('requests-table').innerHTML=table(['编号','类型','TG ID','用户名','金额','申请时余额','当前余额','时间','状态','操作'],d.rows.map(x=>[x.id,x.kind==='CREDIT'?'上分':'下分',x.telegram_id,esc(x.username?'@'+x.username:'未设置'),tdnum(x.amount),tdnum(x.balance_at_request),tdnum(x.current_balance),when(x.created_at),requestStates[x.state],x.state==='PENDING'?'<button data-request="'+x.id+'" data-action="APPROVED">批准</button> <button data-request="'+x.id+'" data-action="REJECTED">拒绝</button>':'—']));}
-async function loadChampions(){const d=await api('champions');$('champion-status').textContent='Data Dragon版本：'+(d.version||'—')+'｜数量：'+d.champions.length+'｜最后更新：'+when(d.updated_at)+'｜'+d.status;$('champions-table').innerHTML=table(['Riot ID','中文名','英文名','头像缓存'],d.champions.map(c=>[c.id,esc(c.name),esc(c.english_name),esc(c.cache_path)]));}
+async function loadChampions(){const d=await api('champions');championCatalog=d.champions||[];$('champion-status').textContent='Data Dragon版本：'+(d.version||'—')+'｜数量：'+championCatalog.length+'｜最后更新：'+when(d.updated_at)+'｜'+d.status;$('champions-table').innerHTML=table(['Riot ID','中文名','英文名','头像缓存'],championCatalog.map(c=>[c.id,esc(c.name),esc(c.english_name),esc(c.cache_path)]));}
 async function loadBot(){const d=await api('bot-settings');$('bot-token').value='';$('bot-username').value=d.bot_username||'';$('bot-group').value=d.group_id||'';$('bot-topic').value=d.topic_id||'';$('bot-admin').value=d.admin_id||'';$('bot-support').value=d.support_username||'';$('bot-enabled').checked=d.enabled;$('bot-status').textContent='当前Token：'+d.token_mask+'｜最近保存：'+when(d.saved_at)+'｜'+(d.restart_required?'保存后需重启':'配置已生效');}
 const oldShow=showTab;showTab=async function(tab){await oldShow(tab);if(tab==='requests')await loadRequests();if(tab==='champions')await loadChampions();if(tab==='bot')await loadBot();};
 bind('requests-refresh',loadRequests);bind('champions-refresh',async()=>{await api('champions/refresh',{},true);await loadChampions();notice('英雄数据已刷新；失败时原缓存会保留。')});bind('bot-test',async()=>{const x=await api('bot-settings/test',{},true);notice('连接成功：@'+x.username)});bind('bot-test-group',async()=>{await api('bot-settings/test-group',{},true);notice('群测试消息已加入发送队列')});bindForm('bot-form',async()=>{await api('bot-settings',{token:$('bot-token').value,bot_username:$('bot-username').value,group_id:Number($('bot-group').value||0),topic_id:Number($('bot-topic').value||0),admin_id:Number($('bot-admin').value||0),support_username:$('bot-support').value,enabled:$('bot-enabled').checked,revision:Number(($('bot-form').dataset.revision||0))},true);await loadBot();notice('配置已原子保存；请按提示重启服务。')});
