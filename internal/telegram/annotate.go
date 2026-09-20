@@ -28,7 +28,7 @@ func composeHeroImage(raw [][]byte, photos []app.MediaPhoto) ([]byte, error) {
 		src, err := png.Decode(bytes.NewReader(b)); if err != nil { return nil, err }
 		x, y := (i%2)*tile, (i/2)*tile
 		xdraw.CatmullRom.Scale(out, image.Rect(x, y, x+tile, y+tile), src, src.Bounds(), xdraw.Over, nil)
-		banker := strings.Contains(photos[i].Caption, "【庄】")
+		banker := strings.Contains(photos[i].Caption, "[庄]")
 		badge := color.RGBA{40, 116, 220, 235}; label := "闲"
 		if banker { badge = color.RGBA{210, 45, 45, 240}; label = "庄" }
 		stdDraw.Draw(out, image.Rect(x+12, y+12, x+112, y+66), image.NewUniform(badge), image.Point{}, stdDraw.Over)

@@ -39,16 +39,17 @@ func (s *Service) queueHeroes(tx *sqlite.Tx, r Round) error {
 		return nil
 	}
 	snapshot := s.Champions.View()
-	p := MessagePayload{ChatID: s.Config.GroupID, ThreadID: s.Config.TopicID, Text: "本期英雄：" + r.Number + "期\n"}
+	p := MessagePayload{ChatID: s.Config.GroupID, ThreadID: s.Config.TopicID, Text: fmt.Sprintf("峡谷账房｜%s期\n开始答题：仅机器人私聊受理，封盘后仅可查询。\n", r.Number)}
 	for i, h := range r.Heroes {
-		mark := ""
+		mark := " [闲]"
 		if i+1 == r.Banker {
-			mark = "【庄】"
+			mark = " [庄]"
 		}
 		caption := fmt.Sprintf("%d号：%s%s", i+1, h.Name, mark)
 		p.Text += caption + "\n"
 		p.Media = append(p.Media, MediaPhoto{ID: h.ID, Version: snapshot.Version, Caption: caption})
 	}
+	p.Text += fmt.Sprintf("单笔%d–%d；累计不超过余额1/4。玩家模式不收取费用。", r.Rules.MinStake, r.Rules.MaxStake)
 	_, e := tx.Exec("INSERT OR IGNORE INTO outbox(key,chat_id,payload,created_at) VALUES(?,?,?,?)", "round-media:"+r.ID, p.ChatID, asJSON(p), now())
 	return e
 }
