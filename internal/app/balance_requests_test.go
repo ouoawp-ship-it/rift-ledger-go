@@ -24,7 +24,7 @@ func TestParseBalanceRequest(t *testing.T) {
 func TestApprovedTopUpAutomaticallyEnablesPlayer(t *testing.T) {
 	s, r := fixture(t, "settlement", "refund", "fees")
 	exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.SetPlayer(tx, 333, "待上分玩家", false) })
-	if e := s.HandleUpdate(update(700, 333, r.OpenedAt+1, "上分100"); e != nil {
+	if e := s.HandleUpdate(update(700, 333, r.OpenedAt+1, "上分100")); e != nil {
 		t.Fatal(e)
 	}
 	if acc(t, s, "tg:333").Enabled {
