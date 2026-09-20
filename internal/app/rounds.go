@@ -292,6 +292,10 @@ func makePreview(tx *sqlite.Tx, r Round, in SettleInput) (Preview, error) {
 		p.WholeVoid = true
 		p.Reason = "对局时长不超过5分钟，整期流局"
 	}
+	if in.CancelReason != "" {
+		p.WholeVoid = true
+		p.Reason = "管理员取消本期并退款：" + in.CancelReason
+	}
 	hands := make([]bull.Hand, 5)
 	for i, raw := range in.Damages {
 		h, e := bull.Evaluate(raw, r.Rules.ZeroTriple)
@@ -340,7 +344,7 @@ func makePreview(tx *sqlite.Tx, r Round, in SettleInput) (Preview, error) {
 			line.Multiplier = 1
 			line.GameDelta = -b.Stake
 		case "VOID":
-			if r.Rules.VoidFee == "refund" || line.Fee != b.Fee {
+			if in.CancelReason != "" || r.Rules.VoidFee == "refund" || line.Fee != b.Fee {
 				line.Fee = 0
 			}
 		default:
@@ -382,6 +386,39 @@ func nextNumber(number string) string {
 	n, _ := strconv.ParseInt(parts[3], 10, 64)
 	return strings.Join(parts[:3], "-") + fmt.Sprintf("-%04d", n+1)
 }
+func (s *Service) CancelRound(tx *sqlite.Tx, id, reason string) (any, error) {
+	reason = strings.TrimSpace(reason)
+	if len([]rune(reason)) < 2 || len([]rune(reason)) > 200 {
+		return nil, bad("请填写2至200字的退款原因")
+	}
+	r, e := getRound(tx, id)
+	if e != nil {
+		return nil, e
+	}
+	if r.State != "OPEN" && r.State != "CLOSED" {
+		return nil, conflict("只能取消受理中或已封盘的未结算期次，已结算期次不可退款")
+	}
+	if r.State == "OPEN" {
+		if _, e = tx.Exec("UPDATE rounds SET state='CLOSED',revision=revision+1 WHERE id=?", id); e != nil {
+			return nil, e
+		}
+		r, e = getRound(tx, id)
+		if e != nil {
+			return nil, e
+		}
+	}
+	in := SettleInput{CancelReason: reason, Damages: []string{"", "", "", "", ""}}
+	p, e := makePreview(tx, r, in)
+	if e != nil {
+		return nil, e
+	}
+	in.PreviewToken = p.Token
+	if e = s.queue(tx, "cancel:"+id, s.Config.GroupID, "", fmt.Sprintf("峡谷账房｜%s期\n本期已取消，全部注单作废，本金冻结已解除，不计算输赢。\n原因：%s", r.Number, reason), false); e != nil {
+		return nil, e
+	}
+	return s.Settle(tx, id, in)
+}
+
 func (s *Service) Settle(tx *sqlite.Tx, id string, in SettleInput) (any, error) {
 	r, e := getRound(tx, id)
 	if e != nil {

@@ -15,7 +15,9 @@
 <div class="table-wrap"><table><thead><tr><th>位置</th><th>稳定英雄 ID</th><th>英雄名称</th><th>本期庄家（必须手选）</th></tr></thead><tbody id="hero-inputs"></tbody></table></div>
 <div class="line"><button id="save-heroes">保存英雄与庄家</button><button id="open-round">开始答题</button><button id="close-round">停止答题／封盘</button></div>
 <small>保存英雄不会自动开放下注。开始后锁定英雄、庄家、期号和本期规则快照。</small></fieldset>
-<fieldset><legend>手动开奖</legend>
+<fieldset id="manual-settlement"><legend>手动开奖／退款</legend>
+<p class="hint">停机恢复后可继续处理本期。有真实伤害数据时补开奖；无法确认结果时取消本期并解除全部下注冻结。已结算期次不能再次处理。</p>
+<div class="line"><button id="manual-open">手动补开奖</button><button id="cancel-round">取消本期／全部退款</button></div>
 <div id="damage-inputs" class="damage-grid"></div>
 <div class="line"><button id="preview">生成结算预览</button><button id="settle" disabled>确认结算并进入下一期</button></div>
 <div id="preview-result"><p class="hint">先封盘，再输入五个原始伤害。任何输入修改都会使旧预览失效。结算成功后自动生成下一期空草稿，不自动开放下注。</p></div>

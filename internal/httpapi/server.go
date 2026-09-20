@@ -405,6 +405,16 @@ func (a *API) route(w http.ResponseWriter, r *http.Request) {
 				return s.CloseRound(tx, id)
 			})
 			return
+		case "cancel":
+			var in struct {
+				Reason string `json:"reason"`
+			}
+			if e := decode(w, r, &in); e != nil {
+				a.respond(w, nil, e)
+				return
+			}
+			a.command(w, r, in, func(tx *sqlite.Tx) (any, error) { return s.CancelRound(tx, id, in.Reason) })
+			return
 		case "preview", "settle":
 			var in app.SettleInput
 			if e := decode(w, r, &in); e != nil {

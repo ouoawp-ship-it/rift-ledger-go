@@ -149,6 +149,7 @@ type BetInput struct {
 	Stake     int64  `json:"stake"`
 }
 type SettleInput struct {
+	CancelReason    string   `json:"-"`
 	DurationSeconds int      `json:"duration_seconds"`
 	Damages         []string `json:"damages"`
 	PreviewToken    string   `json:"preview_token,omitempty"`

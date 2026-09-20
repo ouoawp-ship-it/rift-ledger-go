@@ -39,6 +39,7 @@ function getID(){if(!state?.active_round)throw new Error('当前没有活动期�
 function invalidatePreview(){previewData=null;$('settle').disabled=true;$('preview-result').innerHTML='<p class="hint">输入已改变，请重新生成预览。</p>';}
 function controls(){
  if(!state)return;const r=state.active_round,st=r?.state;
+ $('manual-open').disabled=!['OPEN','CLOSED'].includes(st);$('cancel-round').disabled=!['OPEN','CLOSED'].includes(st);
  $('create-round').disabled=!!r;$('save-heroes').disabled=st!=='DRAFT';$('open-round').disabled=st!=='DRAFT';$('close-round').disabled=st!=='OPEN';$('preview').disabled=st!=='CLOSED';$('settle').disabled=st!=='CLOSED'||!previewData;
  $('number').disabled=!!r&&st!=='DRAFT';
  document.querySelectorAll('#hero-inputs input').forEach(x=>x.disabled=st!=='DRAFT');
@@ -117,6 +118,8 @@ bind('create-round',async()=>{await api('rounds',{number:$('number').value.trim(
 bind('save-heroes',async()=>{const selected=document.querySelector('input[name=banker]:checked');if(!selected)throw new Error('请手动选择本期庄家英雄');const data={number:$('number').value.trim(),banker:Number(selected.value),heroes:Array.from({length:5},(_,i)=>({id:$('hero-id-'+(i+1)).value.trim(),name:$('hero-name-'+(i+1)).value.trim()}))};await api('rounds/'+getID()+'/configure',data,true);await refreshState();notice('英雄与庄家已保存，尚未开放下注。');});
 bind('open-round',async()=>{if(!confirm('使用已保存的英雄、庄家和当前规则开始受理？尚未保存的输入不会生效。'))return;await api('rounds/'+getID()+'/open',{},true);await refreshState();notice('本期已经开始，英雄和规则快照已锁定。');});
 bind('close-round',async()=>{if(!confirm('立即封盘？封盘后不再接受下注，查询仍可用。'))return;await api('rounds/'+getID()+'/close',{},true);await refreshState();notice('已经封盘，可以录入实际伤害并预览。');});
+bind('manual-open',async()=>{const r=state.active_round;if(r.state==='OPEN'){if(!confirm('补开奖前将封盘 '+r.number+' 期，停止接受下注。继续？'))return;await api('rounds/'+r.id+'/close',{},true);await refreshState();}document.querySelector('#damage-inputs input').focus();notice('请填写本期五个真实伤害，生成结算预览后确认补开奖。');});
+bind('cancel-round',async()=>{const r=state.active_round;const reason=prompt('取消 '+r.number+' 期并全部退款，请填写原因（2至200字）：');if(reason===null)return;if([...reason.trim()].length<2||[...reason.trim()].length>200)throw new Error('请填写2至200字的退款原因');if(!confirm('确认取消 '+r.number+' 期？\n全部注单作废，解除本金冻结，不计算输赢，并创建下一期。\n原因：'+reason.trim()))return;await api('rounds/'+r.id+'/cancel',{reason:reason.trim()},true);await refreshState();notice(r.number+'期已取消，下注冻结已解除，已进入下一期。');});
 bind('preview',async()=>{previewData=await api('rounds/'+getID()+'/preview',settleInput());$('preview-result').innerHTML=renderPreview(previewData);notice('预览已生成，尚未改动余额。请逐项核实后确认。');});
 bind('settle',async()=>{if(!previewData)throw new Error('请先生成预览');if(!confirm('确认按当前预览入账？本期结果不可覆盖，之后将自动生成下一期草稿。'))return;const input={...settleInput(),preview_token:previewData.token};const done=await api('rounds/'+getID()+'/settle',input,true);await refreshState();notice(done.number+'期已结算入账，下一期已进入待配置状态。通知送达请查看发送记录。');});
 bindForm('player-form',async()=>{const id=Number($('player-tg').value);if(!Number.isSafeInteger(id)||id<=0)throw new Error('Telegram ID必须是有效正整数');await api('accounts',{telegram_id:id,name:$('player-name').value.trim(),enabled:$('player-enabled').checked},true);await refreshState();await loadPlayers();notice('玩家资格已保存，余额未改变。');});
