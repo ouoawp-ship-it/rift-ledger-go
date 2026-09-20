@@ -32,7 +32,7 @@
 <section class="page" id="page-rules" hidden>
 <div class="rules-shell">
 <div class="rules-fixed" role="note"><strong>固定规则</strong><p>三位数该英雄流局；四位数增加一个1；六位取后五位并保留零；同牛只比较最大数字，仍同则庄赢。庄家流局时整期流局。本版不增加炸弹牛、五小牛等特殊牌型。赔率支持0至100倍、最多两位小数，结算盈利按整数积分四舍五入。</p><p>闲家输仅扣本金1倍。玩家盈利按赔率直接增加余额，玩家亏损按本金扣减；不收取手续费。所有金额为整数账面积分。</p></div>
-<fieldset class="rules-card"><legend>赔率设置</legend><div class="rules-meta"><span id="rules-version"></span><span>保存设置只影响之后开始的期次，不重算历史；0倍不产生盈利，盈利按倍率计算并四舍五入为整数积分。</span></div>
+<fieldset class="rules-card"><legend>赔率设置</legend><div class="rules-meta"><span>保存设置只影响之后开始的期次，不重算历史；0倍不产生盈利，盈利按倍率计算并四舍五入为整数积分。</span></div>
 <form id="rules-form"><div class="rules-layout"><section class="odds-panel"><div class="panel-heading"><h3>闲家获胜净盈利倍数</h3></div><div id="odds-inputs" class="odds-grid"></div></section><section class="limits-panel"><h3>下注金额</h3><label class="setting-row">最低本金<input id="min-stake" type="number" min="1" max="1000000" required></label><label class="setting-row">最高本金<input id="max-stake" type="number" min="1" max="1000000" required></label><label class="setting-row">0＋0＋0能否成牛<select id="zero-triple" required><option value="">请选择</option><option value="true">允许</option><option value="false">不允许</option></select></label></section></div><div class="rules-actions"><button type="submit" class="primary-action">保存设置</button></div></form></fieldset>
 </div>
 </section>

@@ -57,7 +57,7 @@ async function refreshState(force=false){
  $('round-bets').innerHTML=table(['时间','玩家账户','位置','本金','状态','注单ID'],state.bets.map(b=>[esc(when(b.created_at)),esc(b.account_id),esc(b.position),tdnum(b.stake),esc(states[b.state]),'<code>'+esc(b.id)+'</code>']));
  if(!rulesLoaded){renderRules();rulesLoaded=true;}if(!championCatalog.length){try{const d=await api('champions');championCatalog=d.champions||[]}catch{}}controls();
 }
-function renderRules(){const r=state.rules;rulesVersion=state.rules_version;$('rules-version').textContent='后端模板版本：'+rulesVersion;
+function renderRules(){const r=state.rules;rulesVersion=state.rules_version;
  r.payout.forEach((v,i)=>$('odd-'+i).value=v);$('min-stake').value=r.min_stake;$('max-stake').value=r.max_stake;
  $('zero-triple').value=String(r.zero_triple);
 }

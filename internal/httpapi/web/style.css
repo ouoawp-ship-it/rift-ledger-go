@@ -13,7 +13,6 @@
 .rules-card{margin:0;padding:18px 20px 20px;border-color:#d6d9df;border-radius:10px;background:#fff;box-shadow:0 4px 18px rgba(31,41,55,.06)}
 .rules-card legend{font-size:18px;color:#111827;padding:0 8px}
 .rules-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:-2px 0 18px;color:#6b7280;font-size:13px}
-#rules-version{font-weight:700;color:#374151}
 .rules-layout{display:grid;grid-template-columns:minmax(0,3fr) minmax(260px,1fr);gap:22px;align-items:stretch}
 .odds-panel,.limits-panel{border:1px solid #e5e7eb;border-radius:8px;padding:16px;background:#fafafa}
 .limits-panel{background:#fff}
