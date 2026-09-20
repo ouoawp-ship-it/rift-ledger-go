@@ -280,13 +280,15 @@ func makePreview(tx *sqlite.Tx, r Round, in SettleInput) (Preview, error) {
 	if r.State != "CLOSED" {
 		return p, conflict("必须先封盘，再预览或结算")
 	}
-	if in.DurationSeconds < 1 || in.DurationSeconds > 86400 {
-		return p, bad("实际对局时长需要1至86400秒，不使用软件运行时间代替")
+	// DurationSeconds is retained for compatibility with older API clients. New
+	// manual settlement requests omit it; settlement is based on damage only.
+	if in.DurationSeconds < 0 || in.DurationSeconds > 86400 {
+		return p, bad("实际对局时长无效")
 	}
 	if len(in.Damages) != 5 {
 		return p, bad("必须按1至5号顺序提交五个原始伤害")
 	}
-	if in.DurationSeconds <= 300 {
+	if in.DurationSeconds > 0 && in.DurationSeconds <= 300 {
 		p.WholeVoid = true
 		p.Reason = "对局时长不超过5分钟，整期流局"
 	}

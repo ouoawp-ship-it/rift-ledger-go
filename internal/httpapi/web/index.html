@@ -16,10 +16,9 @@
 <div class="line"><button id="save-heroes">保存英雄与庄家</button><button id="open-round">开始答题</button><button id="close-round">停止答题／封盘</button></div>
 <small>保存英雄不会自动开放下注。开始后锁定英雄、庄家、期号和本期规则快照。</small></fieldset>
 <fieldset><legend>手动开奖</legend>
-<div class="line"><label>实际对局时长（秒） <input id="duration" type="number" min="1" max="86400" placeholder="例如1200"></label><span>300秒及以下整期流局；301秒起正常判定。</span></div>
 <div id="damage-inputs" class="damage-grid"></div>
 <div class="line"><button id="preview">生成结算预览</button><button id="settle" disabled>确认结算并进入下一期</button></div>
-<div id="preview-result"><p class="hint">先封盘，再输入伤害。任何输入修改都会使旧预览失效。结算成功后自动生成下一期空草稿，不自动开放下注。</p></div>
+<div id="preview-result"><p class="hint">先封盘，再输入五个原始伤害。任何输入修改都会使旧预览失效。结算成功后自动生成下一期空草稿，不自动开放下注。</p></div>
 </fieldset>
 <fieldset><legend>本期最近200笔注单</legend><div id="round-bets" class="table-wrap"></div></fieldset>
 </section>

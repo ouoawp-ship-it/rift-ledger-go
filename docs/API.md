@@ -19,7 +19,7 @@ curl -sS http://127.0.0.1:8080/api/calculate \
 
 所有修改接口需 `Idempotency-Key`，8—160字符。相同业务重试保留原键和完全相同的输入；复用键改输入返回409。服务持久化成功命令的输入指纹和响应，重复命令不再修改账目。失败命令回滚不收费，不缓存失败为成功。
 
-唯一例外：计算和预览不是写入，不要求幂等键。结算时还必须携带当前预览的 `token` 到 `preview_token`。修改伤害或时长后，重新请求预览；禁止复用旧预览去解释新输入。
+唯一例外：计算和预览不是写入，不要求幂等键。结算时还必须携带当前预览的 `token` 到 `preview_token`。修改伤害后，重新请求预览；禁止复用旧预览去解释新输入。
 
 网页的未知网络结果保留该输入的业务键；刷新页面后内存键可能丢失，因此未知结果必须先查账，不要换键盲目再次调分。API调用方应在自己本地持久化每次业务键。
 
@@ -46,7 +46,7 @@ curl -sS http://127.0.0.1:8080/api/calculate \
 | POST /api/rounds/{id}/open | 空对象{}；必须先确认规则与英雄 |
 | POST /api/rounds/{id}/close | 空对象{} |
 | POST /api/bets | account_id、round_id、position1..5非庄位、stake整数 |
-| POST /api/rounds/{id}/preview | duration_seconds整数、damages五个字符串 |
+| POST /api/rounds/{id}/preview | damages五个字符串（旧客户端可继续携带duration_seconds，但网页不再使用） |
 | POST /api/rounds/{id}/settle | 上述输入 + preview_token |
 | POST /api/outbox/{id}/resolve | action=retry/ack/skip；ack卡片需真实message_id |
 

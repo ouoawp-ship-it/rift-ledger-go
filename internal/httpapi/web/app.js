@@ -42,7 +42,7 @@ function controls(){
  $('create-round').disabled=!!r;$('save-heroes').disabled=st!=='DRAFT';$('open-round').disabled=st!=='DRAFT';$('close-round').disabled=st!=='OPEN';$('preview').disabled=st!=='CLOSED';$('settle').disabled=st!=='CLOSED'||!previewData;
  $('number').disabled=!!r&&st!=='DRAFT';
  document.querySelectorAll('#hero-inputs input').forEach(x=>x.disabled=st!=='DRAFT');
- $('duration').disabled=st!=='CLOSED';document.querySelectorAll('#damage-inputs input').forEach(x=>x.disabled=st!=='CLOSED');
+ document.querySelectorAll('#damage-inputs input').forEach(x=>x.disabled=st!=='CLOSED');
 }
 async function refreshState(force=false){
  const seq=++stateSeq;const next=await api('state');if(seq!==stateSeq)return;state=next;
@@ -50,8 +50,8 @@ async function refreshState(force=false){
  const r=state.active_round;$('round-state').textContent=r?r.number+'期 · '+states[r.state]:'尚无期次';$('round-version').textContent=r?'本期规则版本 '+r.rules_version+'｜修订 '+r.revision:'';
  if((r?.id||'')!==formRoundID||force){
   formRoundID=r?.id||'';$('number').value=r?.number||state.suggested_number;
-  for(let i=1;i<=5;i++){$('hero-id-'+i).value=r?.heroes?.[i-1]?.id||'';$('hero-search-'+i).value=r?.heroes?.[i-1]?.name||'';$('hero-name-'+i).value=r?.heroes?.[i-1]?.name||'';setChampionAvatar(i,r?.heroes?.[i-1]?.id);$('banker-'+i).checked=r?.banker===i;$('damage-'+i).value='';}
-  $('duration').value='';previewData=null;$('preview-result').innerHTML='<p class="hint">封盘后填写实际时长与五个原始伤害，先预览再确认。</p>';
+  for(let i=1;i<=5;i++){$('hero-id-'+i).value=r?.heroes?.[i-1]?.id||'';$('hero-search-'+i).value=r?.heroes?.[i-1]?.name||'';$('hero-name-'+i).value=r?.heroes?.[i-1]?.name||'';setChampionAvatar(i,r?.heroes?.[i-1]?.id);$('banker-'+i).checked=r?.banker===i;$('damage-'+i).value='';$('damage-result-'+i).textContent='等待输入';}
+  previewData=null;$('preview-result').innerHTML='<p class="hint">封盘后填写五个原始伤害，先预览再确认。</p>';
  }
  $('round-bets').innerHTML=table(['时间','玩家账户','位置','本金','状态','注单ID'],state.bets.map(b=>[esc(when(b.created_at)),esc(b.account_id),esc(b.position),tdnum(b.stake),esc(states[b.state]),'<code>'+esc(b.id)+'</code>']));
  if(!rulesLoaded){renderRules();rulesLoaded=true;}if(!championCatalog.length){try{const d=await api('champions');championCatalog=d.champions||[]}catch{}}controls();
@@ -64,8 +64,24 @@ async function showTab(tab){activeTab=tab;document.querySelectorAll('.page').for
  if(tab==='players')await loadPlayers();if(tab==='history'){await loadHistory();await loadEntries();}if(tab==='messages')await loadMessages();if(tab==='checks')await loadAudit();
 }
 function positionTable(p){return table(['位置','英雄／身份','原始伤害','规范化数字','牛型','最大数字','对庄结果','计算说明'],p.positions.map(x=>[esc(x.position),esc(x.hero.name+(x.banker?' [庄]':'')),esc(x.hand.raw),esc(x.hand.normalized||'—'),esc(x.hand.label),esc(x.hand.max_digit),esc(states[x.outcome]),esc(x.reason+'；'+x.hand.explanation)]));}
-function renderPreview(p){return '<div class="summary"><strong>'+esc(p.number)+'期</strong>｜'+(p.whole_void?'整期流局：'+esc(p.reason):'正常结算')+'｜实际时长'+p.duration_seconds+'秒<br>玩家游戏合计 '+signed(p.player_game_delta)+'；注单 '+p.lines.length+'笔</div><div class="table-wrap">'+positionTable(p)+'</div><h4>逐笔结算'+(p.lines.length>200?'（仅展示前200笔，汇总涵盖全部）':'')+'</h4><div class="table-wrap">'+table(['玩家账户','位置','本金','结果','游戏变化','全生命周期变化'],p.lines.slice(0,200).map(l=>[esc(l.account_id),esc(l.position),tdnum(l.stake),esc(states[l.outcome]),esc(signed(l.game_delta)),esc(signed(l.net_delta))]))+'</div>';}
-function settleInput(){const n=Number($('duration').value);if(!Number.isInteger(n)||n<=0)throw new Error('请输入实际对局时长，单位为秒');return {duration_seconds:n,damages:Array.from({length:5},(_,i)=>$('damage-'+(i+1)).value.trim())};}
+function damageLabel(raw){
+ raw=String(raw||'').trim();
+ if(!raw)return '等待输入';
+ if(!/^[0-9]+$/.test(raw))return '请输入数字';
+ if(raw.length<3||raw.length>6)return '需输入3至6位';
+ if(raw[0]==='0')return '不能前导零';
+ if(raw.length===3)return '流局';
+ const normalized=(raw.length===4?'1'+raw:raw.length===6?raw.slice(1):raw),digits=[...normalized].map(Number),sum=digits.reduce((a,b)=>a+b,0);
+ for(let i=0;i<3;i++)for(let j=i+1;j<4;j++)for(let k=j+1;k<5;k++){
+  const triple=digits[i]+digits[j]+digits[k];
+  if(triple%10!==0||(triple===0&&!state?.rules?.zero_triple))continue;
+  const rank=(sum-triple)%10;
+  return rank===0?'牛牛':'牛'+rank;
+ }
+ return '没牛';
+}
+function renderPreview(p){return '<div class="summary"><strong>'+esc(p.number)+'期</strong>｜'+(p.whole_void?'整期流局：'+esc(p.reason):'正常结算')+'<br>玩家游戏合计 '+signed(p.player_game_delta)+'；注单 '+p.lines.length+'笔</div><div class="table-wrap">'+positionTable(p)+'</div><h4>逐笔结算'+(p.lines.length>200?'（仅展示前200笔，汇总涵盖全部）':'')+'</h4><div class="table-wrap">'+table(['玩家账户','位置','本金','结果','游戏变化','全生命周期变化'],p.lines.slice(0,200).map(l=>[esc(l.account_id),esc(l.position),tdnum(l.stake),esc(states[l.outcome]),esc(signed(l.game_delta)),esc(signed(l.net_delta))]))+'</div>';}
+function settleInput(){return {damages:Array.from({length:5},(_,i)=>$('damage-'+(i+1)).value.trim())};}
 async function loadPlayers(){const page=offsets.players,d=await api('accounts?limit=50&offset='+page),rows=d.rows||d,stats=d.stats||{};$('players-page').textContent='第'+(page/50+1)+'页（每页最多50条）';$('players-table').innerHTML='<p class="summary">玩家数量：'+fmt(stats.players||0)+'｜玩家总分：'+fmt(stats.balance||0)+'｜今日盈亏：'+signed(stats.profit||0)+'</p>'+table(['玩家TG ID','玩家昵称','玩家TG用户名','分数','本期下注金额','下注内容','上期盈亏','操作'],rows.map(a=>[esc(a.telegram_id),esc(a.name),esc(a.username?'@'+a.username:'未设置'),tdnum(a.balance),tdnum(a.round_stake||0),esc(a.round_content||'—'),signed(a.last_profit||0),'<button data-player="'+esc(a.telegram_id)+'" data-name="'+esc(a.name)+'" data-enabled="'+a.enabled+'">编辑资格</button> <button data-account="'+esc(a.id)+'">调分</button>']));}
 async function loadHistory(){const page=offsets.history,rows=await api('rounds?limit=10&offset='+page);$('history-page').textContent='第'+(page/10+1)+'页';$('history-table').innerHTML=table(['期号','状态','庄位','规则版本','结算时间','详情'],rows.map(r=>[esc(r.number),esc(states[r.state]),esc(r.banker||'未选'),esc(r.rules_version),esc(when(r.settled_at)),'<button data-round="'+esc(r.id)+'">查看</button>']));}
 async function loadEntries(){const page=offsets.entries,id=$('entry-account').value.trim(),rows=await api('entries?limit=50&offset='+page+'&account_id='+encodeURIComponent(id));$('entries-page').textContent='第'+(page/50+1)+'页';$('entries-table').innerHTML=table(['时间','账户','类型','变化','变化后余额','备注','业务批次'],rows.map(e=>[esc(when(e.created_at)),esc(e.account_id),esc(kindLabel[e.kind]||e.kind),esc(signed(e.delta)),tdnum(e.balance_after),esc(e.note),'<code>'+esc(e.batch)+'</code>']));}
@@ -91,9 +107,9 @@ function chooseChampion(n,c){$('hero-id-'+n).value=c.id;$('hero-search-'+n).valu
 function showChampionResults(n){const box=$('hero-results-'+n);box.replaceChildren();for(const c of championMatches($('hero-search-'+n).value)){const b=document.createElement('button');b.type='button';b.className='champion-option';b.innerHTML='<img src="'+esc(c.image_url)+'" alt=""><span>'+esc(c.name)+'<small>'+(c.title?esc(c.title)+' · ':'')+esc(c.english_name)+' · '+esc(c.id)+'</small></span>';b.addEventListener('click',()=>chooseChampion(n,c));box.appendChild(b)}}
 $('hero-inputs').innerHTML=Array.from({length:5},(_,i)=>{const n=i+1;return '<tr><td>'+n+'号</td><td class="champion-picker"><input type="hidden" id="hero-id-'+n+'"><input type="search" id="hero-search-'+n+'" autocomplete="off" maxlength="40" placeholder="输入亚、Yasuo或ys"><div class="champion-results" id="hero-results-'+n+'"></div></td><td><input type="text" id="hero-name-'+n+'" readonly placeholder="从搜索结果选择"><img class="champion-avatar" id="hero-avatar-'+n+'" alt="已选英雄头像" hidden></td><td><label><input type="radio" name="banker" id="banker-'+n+'" value="'+n+'">选为庄家</label></td></tr>';}).join('');
 for(let n=1;n<=5;n++){$('hero-search-'+n).addEventListener('input',()=>{$('hero-id-'+n).value='';$('hero-name-'+n).value='';setChampionAvatar(n,'');showChampionResults(n)});$('hero-search-'+n).addEventListener('focus',()=>showChampionResults(n));}
-$('damage-inputs').innerHTML=Array.from({length:5},(_,i)=>'<label>'+(i+1)+'号原始伤害<input id="damage-'+(i+1)+'" inputmode="numeric" maxlength="6" placeholder="不要人为补零"></label>').join('');
+$('damage-inputs').innerHTML=Array.from({length:5},(_,i)=>'<label>'+(i+1)+'号原始伤害<input id="damage-'+(i+1)+'" inputmode="numeric" maxlength="6" placeholder="不要人为补零"><span class="damage-result" id="damage-result-'+(i+1)+'">等待输入</span></label>').join('');
 $('odds-inputs').innerHTML=Array.from({length:11},(_,i)=>'<tr><td>'+(i===0?'没牛':i===10?'牛牛':'牛'+i)+'</td><td><input id="odd-'+i+'" type="number" min="0" max="100" step="0.01" required></td></tr>').join('');
-$('duration').addEventListener('input',invalidatePreview);document.querySelectorAll('#damage-inputs input').forEach(x=>x.addEventListener('input',invalidatePreview));
+document.querySelectorAll('#damage-inputs input').forEach((x,i)=>x.addEventListener('input',()=>{invalidatePreview();$('damage-result-'+(i+1)).textContent=damageLabel(x.value)}));
 bindForm('login-form',async()=>{token=$('token').value.trim();try{await refreshState(true);}catch(e){token='';throw e;}$('token').value='';$('login-box').hidden=true;$('workspace').hidden=false;await showTab('round');notice('已连接。首次运行请先刷新英雄数据、确认赔率并开通玩家。');});
 bind('logout',async()=>{token='';state=null;previewData=null;pending.clear();location.reload();});
 bind('refresh',async()=>{await refreshState();await showTab(activeTab);notice('已刷新后端数据；尚未保存的规则和同一期草稿输入未被覆盖。');});
