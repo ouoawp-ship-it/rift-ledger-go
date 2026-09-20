@@ -1,0 +1,395 @@
+{"Time":"2026-09-20T04:32:35.613298282Z","Action":"start","Package":"riftledger/cmd/server"}
+{"Time":"2026-09-20T04:32:35.613381347Z","Action":"output","Package":"riftledger/cmd/server","Output":"?   \triftledger/cmd/server\t[no test files]\n"}
+{"Time":"2026-09-20T04:32:35.613387576Z","Action":"skip","Package":"riftledger/cmd/server","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.807212461Z","Action":"start","Package":"riftledger/internal/app"}
+{"Time":"2026-09-20T04:32:35.81062865Z","Action":"run","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples"}
+{"Time":"2026-09-20T04:32:35.810645926Z","Action":"output","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples","Output":"=== RUN   TestConfirmedLedgerExamples\n"}
+{"Time":"2026-09-20T04:32:35.810763473Z","Action":"run","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/A_two_50_losses"}
+{"Time":"2026-09-20T04:32:35.81076787Z","Action":"output","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/A_two_50_losses","Output":"=== RUN   TestConfirmedLedgerExamples/A_two_50_losses\n"}
+{"Time":"2026-09-20T04:32:35.817504513Z","Action":"output","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/A_two_50_losses","Output":"--- PASS: TestConfirmedLedgerExamples/A_two_50_losses (0.01s)\n"}
+{"Time":"2026-09-20T04:32:35.817550712Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/A_two_50_losses","Elapsed":0.01}
+{"Time":"2026-09-20T04:32:35.81759562Z","Action":"run","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/B_three_60_losses"}
+{"Time":"2026-09-20T04:32:35.817601789Z","Action":"output","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/B_three_60_losses","Output":"=== RUN   TestConfirmedLedgerExamples/B_three_60_losses\n"}
+{"Time":"2026-09-20T04:32:35.823244603Z","Action":"output","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/B_three_60_losses","Output":"--- PASS: TestConfirmedLedgerExamples/B_three_60_losses (0.01s)\n"}
+{"Time":"2026-09-20T04:32:35.82330205Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/B_three_60_losses","Elapsed":0.01}
+{"Time":"2026-09-20T04:32:35.823318915Z","Action":"run","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/C_100_win_bull9"}
+{"Time":"2026-09-20T04:32:35.82332194Z","Action":"output","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/C_100_win_bull9","Output":"=== RUN   TestConfirmedLedgerExamples/C_100_win_bull9\n"}
+{"Time":"2026-09-20T04:32:35.827604945Z","Action":"output","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/C_100_win_bull9","Output":"--- PASS: TestConfirmedLedgerExamples/C_100_win_bull9 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.827650003Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/C_100_win_bull9","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.827695732Z","Action":"run","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/D_loss_is_one_times"}
+{"Time":"2026-09-20T04:32:35.827698907Z","Action":"output","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/D_loss_is_one_times","Output":"=== RUN   TestConfirmedLedgerExamples/D_loss_is_one_times\n"}
+{"Time":"2026-09-20T04:32:35.831878476Z","Action":"output","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/D_loss_is_one_times","Output":"--- PASS: TestConfirmedLedgerExamples/D_loss_is_one_times (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.831920329Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples/D_loss_is_one_times","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.8319341Z","Action":"output","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples","Output":"--- PASS: TestConfirmedLedgerExamples (0.02s)\n"}
+{"Time":"2026-09-20T04:32:35.83195387Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestConfirmedLedgerExamples","Elapsed":0.02}
+{"Time":"2026-09-20T04:32:35.831977505Z","Action":"run","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients"}
+{"Time":"2026-09-20T04:32:35.83198043Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients","Output":"=== RUN   TestFeePoliciesAndRecipients\n"}
+{"Time":"2026-09-20T04:32:35.832012889Z","Action":"run","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_refund_fees"}
+{"Time":"2026-09-20T04:32:35.832016033Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_refund_fees","Output":"=== RUN   TestFeePoliciesAndRecipients/acceptance_refund_fees\n"}
+{"Time":"2026-09-20T04:32:35.835846456Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_refund_fees","Output":"--- PASS: TestFeePoliciesAndRecipients/acceptance_refund_fees (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.835880558Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_refund_fees","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.835896702Z","Action":"run","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_refund_house"}
+{"Time":"2026-09-20T04:32:35.835899997Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_refund_house","Output":"=== RUN   TestFeePoliciesAndRecipients/acceptance_refund_house\n"}
+{"Time":"2026-09-20T04:32:35.839941393Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_refund_house","Output":"--- PASS: TestFeePoliciesAndRecipients/acceptance_refund_house (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.839954773Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_refund_house","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.839958278Z","Action":"run","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_charge_fees"}
+{"Time":"2026-09-20T04:32:35.839960291Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_charge_fees","Output":"=== RUN   TestFeePoliciesAndRecipients/acceptance_charge_fees\n"}
+{"Time":"2026-09-20T04:32:35.84323758Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_charge_fees","Output":"--- PASS: TestFeePoliciesAndRecipients/acceptance_charge_fees (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.843247095Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_charge_fees","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.843249468Z","Action":"run","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_charge_house"}
+{"Time":"2026-09-20T04:32:35.843251181Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_charge_house","Output":"=== RUN   TestFeePoliciesAndRecipients/acceptance_charge_house\n"}
+{"Time":"2026-09-20T04:32:35.846286515Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_charge_house","Output":"--- PASS: TestFeePoliciesAndRecipients/acceptance_charge_house (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.846296721Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/acceptance_charge_house","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.846300557Z","Action":"run","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_refund_fees"}
+{"Time":"2026-09-20T04:32:35.846302239Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_refund_fees","Output":"=== RUN   TestFeePoliciesAndRecipients/settlement_refund_fees\n"}
+{"Time":"2026-09-20T04:32:35.850005946Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_refund_fees","Output":"--- PASS: TestFeePoliciesAndRecipients/settlement_refund_fees (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.85002215Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_refund_fees","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.850027849Z","Action":"run","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_refund_house"}
+{"Time":"2026-09-20T04:32:35.850030663Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_refund_house","Output":"=== RUN   TestFeePoliciesAndRecipients/settlement_refund_house\n"}
+{"Time":"2026-09-20T04:32:35.852686986Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_refund_house","Output":"--- PASS: TestFeePoliciesAndRecipients/settlement_refund_house (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.852697653Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_refund_house","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.85270246Z","Action":"run","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_charge_fees"}
+{"Time":"2026-09-20T04:32:35.852705484Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_charge_fees","Output":"=== RUN   TestFeePoliciesAndRecipients/settlement_charge_fees\n"}
+{"Time":"2026-09-20T04:32:35.855948762Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_charge_fees","Output":"--- PASS: TestFeePoliciesAndRecipients/settlement_charge_fees (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.85596026Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_charge_fees","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.855964556Z","Action":"run","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_charge_house"}
+{"Time":"2026-09-20T04:32:35.855966639Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_charge_house","Output":"=== RUN   TestFeePoliciesAndRecipients/settlement_charge_house\n"}
+{"Time":"2026-09-20T04:32:35.858991688Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_charge_house","Output":"--- PASS: TestFeePoliciesAndRecipients/settlement_charge_house (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.85899957Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients/settlement_charge_house","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.859003616Z","Action":"output","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients","Output":"--- PASS: TestFeePoliciesAndRecipients (0.03s)\n"}
+{"Time":"2026-09-20T04:32:35.859010286Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestFeePoliciesAndRecipients","Elapsed":0.03}
+{"Time":"2026-09-20T04:32:35.859013281Z","Action":"run","Package":"riftledger/internal/app","Test":"TestHeroVoidAndBankerVoid"}
+{"Time":"2026-09-20T04:32:35.859015664Z","Action":"output","Package":"riftledger/internal/app","Test":"TestHeroVoidAndBankerVoid","Output":"=== RUN   TestHeroVoidAndBankerVoid\n"}
+{"Time":"2026-09-20T04:32:35.859020391Z","Action":"run","Package":"riftledger/internal/app","Test":"TestHeroVoidAndBankerVoid/false"}
+{"Time":"2026-09-20T04:32:35.859022194Z","Action":"output","Package":"riftledger/internal/app","Test":"TestHeroVoidAndBankerVoid/false","Output":"=== RUN   TestHeroVoidAndBankerVoid/false\n"}
+{"Time":"2026-09-20T04:32:35.862457672Z","Action":"output","Package":"riftledger/internal/app","Test":"TestHeroVoidAndBankerVoid/false","Output":"--- PASS: TestHeroVoidAndBankerVoid/false (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.862466505Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestHeroVoidAndBankerVoid/false","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.862469239Z","Action":"run","Package":"riftledger/internal/app","Test":"TestHeroVoidAndBankerVoid/true"}
+{"Time":"2026-09-20T04:32:35.862470992Z","Action":"output","Package":"riftledger/internal/app","Test":"TestHeroVoidAndBankerVoid/true","Output":"=== RUN   TestHeroVoidAndBankerVoid/true\n"}
+{"Time":"2026-09-20T04:32:35.866081333Z","Action":"output","Package":"riftledger/internal/app","Test":"TestHeroVoidAndBankerVoid/true","Output":"--- PASS: TestHeroVoidAndBankerVoid/true (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.866091979Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestHeroVoidAndBankerVoid/true","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.866095354Z","Action":"output","Package":"riftledger/internal/app","Test":"TestHeroVoidAndBankerVoid","Output":"--- PASS: TestHeroVoidAndBankerVoid (0.01s)\n"}
+{"Time":"2026-09-20T04:32:35.866097608Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestHeroVoidAndBankerVoid","Elapsed":0.01}
+{"Time":"2026-09-20T04:32:35.866100161Z","Action":"run","Package":"riftledger/internal/app","Test":"TestCumulativeQuarterAndSingleLossFreeze"}
+{"Time":"2026-09-20T04:32:35.866101874Z","Action":"output","Package":"riftledger/internal/app","Test":"TestCumulativeQuarterAndSingleLossFreeze","Output":"=== RUN   TestCumulativeQuarterAndSingleLossFreeze\n"}
+{"Time":"2026-09-20T04:32:35.86893885Z","Action":"output","Package":"riftledger/internal/app","Test":"TestCumulativeQuarterAndSingleLossFreeze","Output":"--- PASS: TestCumulativeQuarterAndSingleLossFreeze (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.868970398Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestCumulativeQuarterAndSingleLossFreeze","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.868974894Z","Action":"run","Package":"riftledger/internal/app","Test":"TestAdmissionRejectionsHaveNoFees"}
+{"Time":"2026-09-20T04:32:35.868977929Z","Action":"output","Package":"riftledger/internal/app","Test":"TestAdmissionRejectionsHaveNoFees","Output":"=== RUN   TestAdmissionRejectionsHaveNoFees\n"}
+{"Time":"2026-09-20T04:32:35.871618358Z","Action":"output","Package":"riftledger/internal/app","Test":"TestAdmissionRejectionsHaveNoFees","Output":"--- PASS: TestAdmissionRejectionsHaveNoFees (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.871630537Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestAdmissionRejectionsHaveNoFees","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.871670577Z","Action":"run","Package":"riftledger/internal/app","Test":"TestImmutableRulesSnapshot"}
+{"Time":"2026-09-20T04:32:35.871673752Z","Action":"output","Package":"riftledger/internal/app","Test":"TestImmutableRulesSnapshot","Output":"=== RUN   TestImmutableRulesSnapshot\n"}
+{"Time":"2026-09-20T04:32:35.875038924Z","Action":"output","Package":"riftledger/internal/app","Test":"TestImmutableRulesSnapshot","Output":"--- PASS: TestImmutableRulesSnapshot (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.875052033Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestImmutableRulesSnapshot","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.87505633Z","Action":"run","Package":"riftledger/internal/app","Test":"TestIdempotentConcurrentBetAndPayloadConflict"}
+{"Time":"2026-09-20T04:32:35.875059264Z","Action":"output","Package":"riftledger/internal/app","Test":"TestIdempotentConcurrentBetAndPayloadConflict","Output":"=== RUN   TestIdempotentConcurrentBetAndPayloadConflict\n"}
+{"Time":"2026-09-20T04:32:35.878171174Z","Action":"output","Package":"riftledger/internal/app","Test":"TestIdempotentConcurrentBetAndPayloadConflict","Output":"--- PASS: TestIdempotentConcurrentBetAndPayloadConflict (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.878183022Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestIdempotentConcurrentBetAndPayloadConflict","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.878188731Z","Action":"run","Package":"riftledger/internal/app","Test":"TestPreviewInvalidationAndSettlementReplay"}
+{"Time":"2026-09-20T04:32:35.878191935Z","Action":"output","Package":"riftledger/internal/app","Test":"TestPreviewInvalidationAndSettlementReplay","Output":"=== RUN   TestPreviewInvalidationAndSettlementReplay\n"}
+{"Time":"2026-09-20T04:32:35.88429952Z","Action":"output","Package":"riftledger/internal/app","Test":"TestPreviewInvalidationAndSettlementReplay","Output":"--- PASS: TestPreviewInvalidationAndSettlementReplay (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.884318128Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestPreviewInvalidationAndSettlementReplay","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.884321623Z","Action":"run","Package":"riftledger/internal/app","Test":"TestNoDefaultBankerAndUniqueHeroes"}
+{"Time":"2026-09-20T04:32:35.884323626Z","Action":"output","Package":"riftledger/internal/app","Test":"TestNoDefaultBankerAndUniqueHeroes","Output":"=== RUN   TestNoDefaultBankerAndUniqueHeroes\n"}
+{"Time":"2026-09-20T04:32:35.884821747Z","Action":"output","Package":"riftledger/internal/app","Test":"TestNoDefaultBankerAndUniqueHeroes","Output":"--- PASS: TestNoDefaultBankerAndUniqueHeroes (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.884826765Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestNoDefaultBankerAndUniqueHeroes","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.884829078Z","Action":"run","Package":"riftledger/internal/app","Test":"TestUnconfirmedRulesBlockOpening"}
+{"Time":"2026-09-20T04:32:35.884830761Z","Action":"output","Package":"riftledger/internal/app","Test":"TestUnconfirmedRulesBlockOpening","Output":"=== RUN   TestUnconfirmedRulesBlockOpening\n"}
+{"Time":"2026-09-20T04:32:35.888032206Z","Action":"output","Package":"riftledger/internal/app","Test":"TestUnconfirmedRulesBlockOpening","Output":"--- PASS: TestUnconfirmedRulesBlockOpening (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.888043122Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestUnconfirmedRulesBlockOpening","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.888047509Z","Action":"run","Package":"riftledger/internal/app","Test":"TestLedgerImmutableAndRollback"}
+{"Time":"2026-09-20T04:32:35.888049772Z","Action":"output","Package":"riftledger/internal/app","Test":"TestLedgerImmutableAndRollback","Output":"=== RUN   TestLedgerImmutableAndRollback\n"}
+{"Time":"2026-09-20T04:32:35.890689395Z","Action":"output","Package":"riftledger/internal/app","Test":"TestLedgerImmutableAndRollback","Output":"--- PASS: TestLedgerImmutableAndRollback (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.890701383Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestLedgerImmutableAndRollback","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.890704658Z","Action":"run","Package":"riftledger/internal/app","Test":"TestSettingsValidationAndOptimisticVersion"}
+{"Time":"2026-09-20T04:32:35.890707012Z","Action":"output","Package":"riftledger/internal/app","Test":"TestSettingsValidationAndOptimisticVersion","Output":"=== RUN   TestSettingsValidationAndOptimisticVersion\n"}
+{"Time":"2026-09-20T04:32:35.892822821Z","Action":"output","Package":"riftledger/internal/app","Test":"TestSettingsValidationAndOptimisticVersion","Output":"--- PASS: TestSettingsValidationAndOptimisticVersion (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.892833186Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestSettingsValidationAndOptimisticVersion","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.89283604Z","Action":"run","Package":"riftledger/internal/app","Test":"TestDatabaseRestartPreservesSettings"}
+{"Time":"2026-09-20T04:32:35.892838284Z","Action":"output","Package":"riftledger/internal/app","Test":"TestDatabaseRestartPreservesSettings","Output":"=== RUN   TestDatabaseRestartPreservesSettings\n"}
+{"Time":"2026-09-20T04:32:35.895384361Z","Action":"output","Package":"riftledger/internal/app","Test":"TestDatabaseRestartPreservesSettings","Output":"--- PASS: TestDatabaseRestartPreservesSettings (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.895390681Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestDatabaseRestartPreservesSettings","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.895393345Z","Action":"run","Package":"riftledger/internal/app","Test":"TestThreeDigitIsNotNoBull"}
+{"Time":"2026-09-20T04:32:35.895395668Z","Action":"output","Package":"riftledger/internal/app","Test":"TestThreeDigitIsNotNoBull","Output":"=== RUN   TestThreeDigitIsNotNoBull\n"}
+{"Time":"2026-09-20T04:32:35.902351641Z","Action":"output","Package":"riftledger/internal/app","Test":"TestThreeDigitIsNotNoBull","Output":"--- PASS: TestThreeDigitIsNotNoBull (0.01s)\n"}
+{"Time":"2026-09-20T04:32:35.902367555Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestThreeDigitIsNotNoBull","Elapsed":0.01}
+{"Time":"2026-09-20T04:32:35.902372923Z","Action":"run","Package":"riftledger/internal/app","Test":"TestLowAndHighInvalidDamagePreventPartialSettlement"}
+{"Time":"2026-09-20T04:32:35.90237746Z","Action":"output","Package":"riftledger/internal/app","Test":"TestLowAndHighInvalidDamagePreventPartialSettlement","Output":"=== RUN   TestLowAndHighInvalidDamagePreventPartialSettlement\n"}
+{"Time":"2026-09-20T04:32:35.905611274Z","Action":"output","Package":"riftledger/internal/app","Test":"TestLowAndHighInvalidDamagePreventPartialSettlement","Output":"--- PASS: TestLowAndHighInvalidDamagePreventPartialSettlement (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.905623382Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestLowAndHighInvalidDamagePreventPartialSettlement","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.905626877Z","Action":"run","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions"}
+{"Time":"2026-09-20T04:32:35.905629291Z","Action":"output","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions","Output":"=== RUN   TestAllValidBankerPositions\n"}
+{"Time":"2026-09-20T04:32:35.905631725Z","Action":"run","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/1"}
+{"Time":"2026-09-20T04:32:35.905633217Z","Action":"output","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/1","Output":"=== RUN   TestAllValidBankerPositions/1\n"}
+{"Time":"2026-09-20T04:32:35.909154725Z","Action":"output","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/1","Output":"--- PASS: TestAllValidBankerPositions/1 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.909162006Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/1","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.90916501Z","Action":"run","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/2"}
+{"Time":"2026-09-20T04:32:35.909166713Z","Action":"output","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/2","Output":"=== RUN   TestAllValidBankerPositions/2\n"}
+{"Time":"2026-09-20T04:32:35.912530512Z","Action":"output","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/2","Output":"--- PASS: TestAllValidBankerPositions/2 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.912537273Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/2","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.912543602Z","Action":"run","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/3"}
+{"Time":"2026-09-20T04:32:35.912545205Z","Action":"output","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/3","Output":"=== RUN   TestAllValidBankerPositions/3\n"}
+{"Time":"2026-09-20T04:32:35.916053392Z","Action":"output","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/3","Output":"--- PASS: TestAllValidBankerPositions/3 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.916069877Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/3","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.916073762Z","Action":"run","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/4"}
+{"Time":"2026-09-20T04:32:35.916075685Z","Action":"output","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/4","Output":"=== RUN   TestAllValidBankerPositions/4\n"}
+{"Time":"2026-09-20T04:32:35.921196543Z","Action":"output","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/4","Output":"--- PASS: TestAllValidBankerPositions/4 (0.01s)\n"}
+{"Time":"2026-09-20T04:32:35.921208882Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/4","Elapsed":0.01}
+{"Time":"2026-09-20T04:32:35.921213258Z","Action":"run","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/5"}
+{"Time":"2026-09-20T04:32:35.921218286Z","Action":"output","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/5","Output":"=== RUN   TestAllValidBankerPositions/5\n"}
+{"Time":"2026-09-20T04:32:35.926165742Z","Action":"output","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/5","Output":"--- PASS: TestAllValidBankerPositions/5 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.926175437Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions/5","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.926180374Z","Action":"output","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions","Output":"--- PASS: TestAllValidBankerPositions (0.02s)\n"}
+{"Time":"2026-09-20T04:32:35.926183509Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestAllValidBankerPositions","Elapsed":0.02}
+{"Time":"2026-09-20T04:32:35.926186924Z","Action":"run","Package":"riftledger/internal/app","Test":"TestJSONRoundTripOfMoney"}
+{"Time":"2026-09-20T04:32:35.926189047Z","Action":"output","Package":"riftledger/internal/app","Test":"TestJSONRoundTripOfMoney","Output":"=== RUN   TestJSONRoundTripOfMoney\n"}
+{"Time":"2026-09-20T04:32:35.926240344Z","Action":"output","Package":"riftledger/internal/app","Test":"TestJSONRoundTripOfMoney","Output":"--- PASS: TestJSONRoundTripOfMoney (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.92624412Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestJSONRoundTripOfMoney","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.926246934Z","Action":"run","Package":"riftledger/internal/app","Test":"TestShortcutParser"}
+{"Time":"2026-09-20T04:32:35.926248907Z","Action":"output","Package":"riftledger/internal/app","Test":"TestShortcutParser","Output":"=== RUN   TestShortcutParser\n"}
+{"Time":"2026-09-20T04:32:35.926268196Z","Action":"output","Package":"riftledger/internal/app","Test":"TestShortcutParser","Output":"--- PASS: TestShortcutParser (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.926280154Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestShortcutParser","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.926282198Z","Action":"run","Package":"riftledger/internal/app","Test":"TestTelegramDuplicateUpdates"}
+{"Time":"2026-09-20T04:32:35.9262837Z","Action":"output","Package":"riftledger/internal/app","Test":"TestTelegramDuplicateUpdates","Output":"=== RUN   TestTelegramDuplicateUpdates\n"}
+{"Time":"2026-09-20T04:32:35.928965542Z","Action":"output","Package":"riftledger/internal/app","Test":"TestTelegramDuplicateUpdates","Output":"--- PASS: TestTelegramDuplicateUpdates (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.928969478Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestTelegramDuplicateUpdates","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.928971771Z","Action":"run","Package":"riftledger/internal/app","Test":"TestRejectedTelegramUpdateNeverBecomesNewBet"}
+{"Time":"2026-09-20T04:32:35.928973524Z","Action":"output","Package":"riftledger/internal/app","Test":"TestRejectedTelegramUpdateNeverBecomesNewBet","Output":"=== RUN   TestRejectedTelegramUpdateNeverBecomesNewBet\n"}
+{"Time":"2026-09-20T04:32:35.931450857Z","Action":"output","Package":"riftledger/internal/app","Test":"TestRejectedTelegramUpdateNeverBecomesNewBet","Output":"--- PASS: TestRejectedTelegramUpdateNeverBecomesNewBet (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.931462595Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestRejectedTelegramUpdateNeverBecomesNewBet","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.931465239Z","Action":"run","Package":"riftledger/internal/app","Test":"TestUnknownPlayerWhitelistAndAdminNotice"}
+{"Time":"2026-09-20T04:32:35.931467012Z","Action":"output","Package":"riftledger/internal/app","Test":"TestUnknownPlayerWhitelistAndAdminNotice","Output":"=== RUN   TestUnknownPlayerWhitelistAndAdminNotice\n"}
+{"Time":"2026-09-20T04:32:35.933759757Z","Action":"output","Package":"riftledger/internal/app","Test":"TestUnknownPlayerWhitelistAndAdminNotice","Output":"--- PASS: TestUnknownPlayerWhitelistAndAdminNotice (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.933771755Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestUnknownPlayerWhitelistAndAdminNotice","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.933774669Z","Action":"run","Package":"riftledger/internal/app","Test":"TestPrivateOnlyAndOldMessageGuard"}
+{"Time":"2026-09-20T04:32:35.933776642Z","Action":"output","Package":"riftledger/internal/app","Test":"TestPrivateOnlyAndOldMessageGuard","Output":"=== RUN   TestPrivateOnlyAndOldMessageGuard\n"}
+{"Time":"2026-09-20T04:32:35.93630292Z","Action":"output","Package":"riftledger/internal/app","Test":"TestPrivateOnlyAndOldMessageGuard","Output":"--- PASS: TestPrivateOnlyAndOldMessageGuard (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.936312404Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestPrivateOnlyAndOldMessageGuard","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.936315028Z","Action":"run","Package":"riftledger/internal/app","Test":"TestQueriesWorkAfterClosingAndOnlyShowOwnBets"}
+{"Time":"2026-09-20T04:32:35.936316881Z","Action":"output","Package":"riftledger/internal/app","Test":"TestQueriesWorkAfterClosingAndOnlyShowOwnBets","Output":"=== RUN   TestQueriesWorkAfterClosingAndOnlyShowOwnBets\n"}
+{"Time":"2026-09-20T04:32:35.939012373Z","Action":"output","Package":"riftledger/internal/app","Test":"TestQueriesWorkAfterClosingAndOnlyShowOwnBets","Output":"--- PASS: TestQueriesWorkAfterClosingAndOnlyShowOwnBets (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.939021657Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestQueriesWorkAfterClosingAndOnlyShowOwnBets","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.939025803Z","Action":"run","Package":"riftledger/internal/app","Test":"TestEditedUpdateIgnoredAndCallbacksPrivate"}
+{"Time":"2026-09-20T04:32:35.939028257Z","Action":"output","Package":"riftledger/internal/app","Test":"TestEditedUpdateIgnoredAndCallbacksPrivate","Output":"=== RUN   TestEditedUpdateIgnoredAndCallbacksPrivate\n"}
+{"Time":"2026-09-20T04:32:35.941126129Z","Action":"output","Package":"riftledger/internal/app","Test":"TestEditedUpdateIgnoredAndCallbacksPrivate","Output":"--- PASS: TestEditedUpdateIgnoredAndCallbacksPrivate (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.9411401Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestEditedUpdateIgnoredAndCallbacksPrivate","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.941143415Z","Action":"run","Package":"riftledger/internal/app","Test":"TestOutboxOrderingCardReuseAndUnknownRecovery"}
+{"Time":"2026-09-20T04:32:35.941145478Z","Action":"output","Package":"riftledger/internal/app","Test":"TestOutboxOrderingCardReuseAndUnknownRecovery","Output":"=== RUN   TestOutboxOrderingCardReuseAndUnknownRecovery\n"}
+{"Time":"2026-09-20T04:32:35.943646016Z","Action":"output","Package":"riftledger/internal/app","Test":"TestOutboxOrderingCardReuseAndUnknownRecovery","Output":"--- PASS: TestOutboxOrderingCardReuseAndUnknownRecovery (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.943667439Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestOutboxOrderingCardReuseAndUnknownRecovery","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.943670604Z","Action":"run","Package":"riftledger/internal/app","Test":"TestBotIdentityCannotBeSilentlyChanged"}
+{"Time":"2026-09-20T04:32:35.943672667Z","Action":"output","Package":"riftledger/internal/app","Test":"TestBotIdentityCannotBeSilentlyChanged","Output":"=== RUN   TestBotIdentityCannotBeSilentlyChanged\n"}
+{"Time":"2026-09-20T04:32:35.946552397Z","Action":"output","Package":"riftledger/internal/app","Test":"TestBotIdentityCannotBeSilentlyChanged","Output":"--- PASS: TestBotIdentityCannotBeSilentlyChanged (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.946564485Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestBotIdentityCannotBeSilentlyChanged","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.94656802Z","Action":"run","Package":"riftledger/internal/app","Test":"TestDisabledAccountStillSettles"}
+{"Time":"2026-09-20T04:32:35.946570033Z","Action":"output","Package":"riftledger/internal/app","Test":"TestDisabledAccountStillSettles","Output":"=== RUN   TestDisabledAccountStillSettles\n"}
+{"Time":"2026-09-20T04:32:35.94951336Z","Action":"output","Package":"riftledger/internal/app","Test":"TestDisabledAccountStillSettles","Output":"--- PASS: TestDisabledAccountStillSettles (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.949523255Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestDisabledAccountStillSettles","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.94952678Z","Action":"run","Package":"riftledger/internal/app","Test":"TestRowCountsDoNotChangeOnRepeatedSettlementCommand"}
+{"Time":"2026-09-20T04:32:35.949528893Z","Action":"output","Package":"riftledger/internal/app","Test":"TestRowCountsDoNotChangeOnRepeatedSettlementCommand","Output":"=== RUN   TestRowCountsDoNotChangeOnRepeatedSettlementCommand\n"}
+{"Time":"2026-09-20T04:32:35.95255924Z","Action":"output","Package":"riftledger/internal/app","Test":"TestRowCountsDoNotChangeOnRepeatedSettlementCommand","Output":"--- PASS: TestRowCountsDoNotChangeOnRepeatedSettlementCommand (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.952566832Z","Action":"pass","Package":"riftledger/internal/app","Test":"TestRowCountsDoNotChangeOnRepeatedSettlementCommand","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.952570467Z","Action":"output","Package":"riftledger/internal/app","Output":"PASS\n"}
+{"Time":"2026-09-20T04:32:35.954417981Z","Action":"output","Package":"riftledger/internal/app","Output":"ok  \triftledger/internal/app\t0.147s\n"}
+{"Time":"2026-09-20T04:32:35.954432573Z","Action":"pass","Package":"riftledger/internal/app","Elapsed":0.147}
+{"Time":"2026-09-20T04:32:35.972456437Z","Action":"start","Package":"riftledger/internal/httpapi"}
+{"Time":"2026-09-20T04:32:35.97255758Z","Action":"start","Package":"riftledger/internal/sqlite"}
+{"Time":"2026-09-20T04:32:35.97448191Z","Action":"run","Package":"riftledger/internal/sqlite","Test":"TestPreparedStatementsAndNullBytes"}
+{"Time":"2026-09-20T04:32:35.974506807Z","Action":"output","Package":"riftledger/internal/sqlite","Test":"TestPreparedStatementsAndNullBytes","Output":"=== RUN   TestPreparedStatementsAndNullBytes\n"}
+{"Time":"2026-09-20T04:32:35.974742562Z","Action":"run","Package":"riftledger/internal/httpapi","Test":"TestAuthenticationAndCSRF"}
+{"Time":"2026-09-20T04:32:35.974747951Z","Action":"output","Package":"riftledger/internal/httpapi","Test":"TestAuthenticationAndCSRF","Output":"=== RUN   TestAuthenticationAndCSRF\n"}
+{"Time":"2026-09-20T04:32:35.975521827Z","Action":"output","Package":"riftledger/internal/sqlite","Test":"TestPreparedStatementsAndNullBytes","Output":"--- PASS: TestPreparedStatementsAndNullBytes (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.97556364Z","Action":"pass","Package":"riftledger/internal/sqlite","Test":"TestPreparedStatementsAndNullBytes","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.97557701Z","Action":"run","Package":"riftledger/internal/sqlite","Test":"TestRollbackIncludingPanic"}
+{"Time":"2026-09-20T04:32:35.975579023Z","Action":"output","Package":"riftledger/internal/sqlite","Test":"TestRollbackIncludingPanic","Output":"=== RUN   TestRollbackIncludingPanic\n"}
+{"Time":"2026-09-20T04:32:35.976098566Z","Action":"output","Package":"riftledger/internal/sqlite","Test":"TestRollbackIncludingPanic","Output":"--- PASS: TestRollbackIncludingPanic (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.976136163Z","Action":"pass","Package":"riftledger/internal/sqlite","Test":"TestRollbackIncludingPanic","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.9761475Z","Action":"run","Package":"riftledger/internal/sqlite","Test":"TestConcurrentTransactions"}
+{"Time":"2026-09-20T04:32:35.976149443Z","Action":"output","Package":"riftledger/internal/sqlite","Test":"TestConcurrentTransactions","Output":"=== RUN   TestConcurrentTransactions\n"}
+{"Time":"2026-09-20T04:32:35.97718249Z","Action":"output","Package":"riftledger/internal/httpapi","Test":"TestAuthenticationAndCSRF","Output":"--- PASS: TestAuthenticationAndCSRF (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.977190332Z","Action":"pass","Package":"riftledger/internal/httpapi","Test":"TestAuthenticationAndCSRF","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.977195079Z","Action":"run","Package":"riftledger/internal/httpapi","Test":"TestStaticAndHealth"}
+{"Time":"2026-09-20T04:32:35.977197182Z","Action":"output","Package":"riftledger/internal/httpapi","Test":"TestStaticAndHealth","Output":"=== RUN   TestStaticAndHealth\n"}
+{"Time":"2026-09-20T04:32:35.980342482Z","Action":"output","Package":"riftledger/internal/httpapi","Test":"TestStaticAndHealth","Output":"--- PASS: TestStaticAndHealth (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.980354881Z","Action":"pass","Package":"riftledger/internal/httpapi","Test":"TestStaticAndHealth","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.980358456Z","Action":"run","Package":"riftledger/internal/httpapi","Test":"TestStrictJSONAndNoFloatingMoney"}
+{"Time":"2026-09-20T04:32:35.980360379Z","Action":"output","Package":"riftledger/internal/httpapi","Test":"TestStrictJSONAndNoFloatingMoney","Output":"=== RUN   TestStrictJSONAndNoFloatingMoney\n"}
+{"Time":"2026-09-20T04:32:35.980771969Z","Action":"output","Package":"riftledger/internal/sqlite","Test":"TestConcurrentTransactions","Output":"--- PASS: TestConcurrentTransactions (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.980776146Z","Action":"pass","Package":"riftledger/internal/sqlite","Test":"TestConcurrentTransactions","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.980780252Z","Action":"run","Package":"riftledger/internal/sqlite","Test":"TestPersistenceAndClose"}
+{"Time":"2026-09-20T04:32:35.980782055Z","Action":"output","Package":"riftledger/internal/sqlite","Test":"TestPersistenceAndClose","Output":"=== RUN   TestPersistenceAndClose\n"}
+{"Time":"2026-09-20T04:32:35.981733909Z","Action":"output","Package":"riftledger/internal/httpapi","Test":"TestStrictJSONAndNoFloatingMoney","Output":"--- PASS: TestStrictJSONAndNoFloatingMoney (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.981743804Z","Action":"pass","Package":"riftledger/internal/httpapi","Test":"TestStrictJSONAndNoFloatingMoney","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.981746989Z","Action":"run","Package":"riftledger/internal/httpapi","Test":"TestDamageCompareAndMissingIdempotencyKey"}
+{"Time":"2026-09-20T04:32:35.981748892Z","Action":"output","Package":"riftledger/internal/httpapi","Test":"TestDamageCompareAndMissingIdempotencyKey","Output":"=== RUN   TestDamageCompareAndMissingIdempotencyKey\n"}
+{"Time":"2026-09-20T04:32:35.982049665Z","Action":"output","Package":"riftledger/internal/sqlite","Test":"TestPersistenceAndClose","Output":"--- PASS: TestPersistenceAndClose (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.982054002Z","Action":"pass","Package":"riftledger/internal/sqlite","Test":"TestPersistenceAndClose","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.98212617Z","Action":"output","Package":"riftledger/internal/sqlite","Output":"PASS\n"}
+{"Time":"2026-09-20T04:32:35.982232671Z","Action":"output","Package":"riftledger/internal/sqlite","Output":"ok  \triftledger/internal/sqlite\t0.010s\n"}
+{"Time":"2026-09-20T04:32:35.98223901Z","Action":"pass","Package":"riftledger/internal/sqlite","Elapsed":0.01}
+{"Time":"2026-09-20T04:32:35.983192437Z","Action":"output","Package":"riftledger/internal/httpapi","Test":"TestDamageCompareAndMissingIdempotencyKey","Output":"--- PASS: TestDamageCompareAndMissingIdempotencyKey (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.98320104Z","Action":"pass","Package":"riftledger/internal/httpapi","Test":"TestDamageCompareAndMissingIdempotencyKey","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.983204125Z","Action":"run","Package":"riftledger/internal/httpapi","Test":"TestHTTPIdempotencyReplay"}
+{"Time":"2026-09-20T04:32:35.983205978Z","Action":"output","Package":"riftledger/internal/httpapi","Test":"TestHTTPIdempotencyReplay","Output":"=== RUN   TestHTTPIdempotencyReplay\n"}
+{"Time":"2026-09-20T04:32:35.984819139Z","Action":"output","Package":"riftledger/internal/httpapi","Test":"TestHTTPIdempotencyReplay","Output":"--- PASS: TestHTTPIdempotencyReplay (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.98482679Z","Action":"pass","Package":"riftledger/internal/httpapi","Test":"TestHTTPIdempotencyReplay","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.984829064Z","Action":"run","Package":"riftledger/internal/httpapi","Test":"TestRequestBodyLimit"}
+{"Time":"2026-09-20T04:32:35.984834412Z","Action":"output","Package":"riftledger/internal/httpapi","Test":"TestRequestBodyLimit","Output":"=== RUN   TestRequestBodyLimit\n"}
+{"Time":"2026-09-20T04:32:35.994664798Z","Action":"start","Package":"riftledger/internal/telegram"}
+{"Time":"2026-09-20T04:32:35.995014184Z","Action":"start","Package":"riftledger/pkg/bull"}
+{"Time":"2026-09-20T04:32:35.995566076Z","Action":"output","Package":"riftledger/internal/httpapi","Test":"TestRequestBodyLimit","Output":"--- PASS: TestRequestBodyLimit (0.01s)\n"}
+{"Time":"2026-09-20T04:32:35.99559511Z","Action":"pass","Package":"riftledger/internal/httpapi","Test":"TestRequestBodyLimit","Elapsed":0.01}
+{"Time":"2026-09-20T04:32:35.995599777Z","Action":"output","Package":"riftledger/internal/httpapi","Output":"PASS\n"}
+{"Time":"2026-09-20T04:32:35.995829343Z","Action":"output","Package":"riftledger/internal/httpapi","Output":"ok  \triftledger/internal/httpapi\t0.023s\n"}
+{"Time":"2026-09-20T04:32:35.995842072Z","Action":"pass","Package":"riftledger/internal/httpapi","Elapsed":0.023}
+{"Time":"2026-09-20T04:32:35.995910425Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestDamageExamples"}
+{"Time":"2026-09-20T04:32:35.995918267Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples","Output":"=== RUN   TestDamageExamples\n"}
+{"Time":"2026-09-20T04:32:35.995964286Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/12710"}
+{"Time":"2026-09-20T04:32:35.995967301Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/12710","Output":"=== RUN   TestDamageExamples/12710\n"}
+{"Time":"2026-09-20T04:32:35.996004076Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/12710","Output":"--- PASS: TestDamageExamples/12710 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996414395Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/12710","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996423759Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/12745"}
+{"Time":"2026-09-20T04:32:35.996426002Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/12745","Output":"=== RUN   TestDamageExamples/12745\n"}
+{"Time":"2026-09-20T04:32:35.9964315Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/12745","Output":"--- PASS: TestDamageExamples/12745 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996434665Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/12745","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996436708Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/12737"}
+{"Time":"2026-09-20T04:32:35.996438391Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/12737","Output":"=== RUN   TestDamageExamples/12737\n"}
+{"Time":"2026-09-20T04:32:35.996442247Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/12737","Output":"--- PASS: TestDamageExamples/12737 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.99644421Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/12737","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996445902Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/99999"}
+{"Time":"2026-09-20T04:32:35.996447314Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/99999","Output":"=== RUN   TestDamageExamples/99999\n"}
+{"Time":"2026-09-20T04:32:35.996450239Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/99999","Output":"--- PASS: TestDamageExamples/99999 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996452512Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/99999","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996454705Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/999"}
+{"Time":"2026-09-20T04:32:35.996456288Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/999","Output":"=== RUN   TestDamageExamples/999\n"}
+{"Time":"2026-09-20T04:32:35.996462297Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/999","Output":"--- PASS: TestDamageExamples/999 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996465341Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/999","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996467575Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/1234"}
+{"Time":"2026-09-20T04:32:35.996469157Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/1234","Output":"=== RUN   TestDamageExamples/1234\n"}
+{"Time":"2026-09-20T04:32:35.996472622Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/1234","Output":"--- PASS: TestDamageExamples/1234 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.99647756Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/1234","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996479753Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/1237"}
+{"Time":"2026-09-20T04:32:35.996481406Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/1237","Output":"=== RUN   TestDamageExamples/1237\n"}
+{"Time":"2026-09-20T04:32:35.99648406Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/1237","Output":"--- PASS: TestDamageExamples/1237 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996497951Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/1237","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996500124Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/100001"}
+{"Time":"2026-09-20T04:32:35.996502117Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/100001","Output":"=== RUN   TestDamageExamples/100001\n"}
+{"Time":"2026-09-20T04:32:35.996504701Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/100001","Output":"--- PASS: TestDamageExamples/100001 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996506493Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/100001","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996530329Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/100000"}
+{"Time":"2026-09-20T04:32:35.996532192Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/100000","Output":"=== RUN   TestDamageExamples/100000\n"}
+{"Time":"2026-09-20T04:32:35.996535417Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/100000","Output":"--- PASS: TestDamageExamples/100000 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.99653718Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/100000","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996539012Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/100012"}
+{"Time":"2026-09-20T04:32:35.996541206Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/100012","Output":"=== RUN   TestDamageExamples/100012\n"}
+{"Time":"2026-09-20T04:32:35.996545372Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/100012","Output":"--- PASS: TestDamageExamples/100012 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996547155Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestDamageExamples/100012","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996549508Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestDamageExamples","Output":"--- PASS: TestDamageExamples (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996551371Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestDamageExamples","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996553024Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage"}
+{"Time":"2026-09-20T04:32:35.996554596Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage","Output":"=== RUN   TestInvalidDamage\n"}
+{"Time":"2026-09-20T04:32:35.996556669Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/#00"}
+{"Time":"2026-09-20T04:32:35.996580996Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/#00","Output":"=== RUN   TestInvalidDamage/#00\n"}
+{"Time":"2026-09-20T04:32:35.996583359Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/#00","Output":"--- PASS: TestInvalidDamage/#00 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996585212Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/#00","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996586844Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/0"}
+{"Time":"2026-09-20T04:32:35.996588377Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/0","Output":"=== RUN   TestInvalidDamage/0\n"}
+{"Time":"2026-09-20T04:32:35.996591391Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/0","Output":"--- PASS: TestInvalidDamage/0 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996593565Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/0","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996595628Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/99"}
+{"Time":"2026-09-20T04:32:35.99659732Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/99","Output":"=== RUN   TestInvalidDamage/99\n"}
+{"Time":"2026-09-20T04:32:35.996599413Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/99","Output":"--- PASS: TestInvalidDamage/99 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996601236Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/99","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996602789Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/01234"}
+{"Time":"2026-09-20T04:32:35.996604281Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/01234","Output":"=== RUN   TestInvalidDamage/01234\n"}
+{"Time":"2026-09-20T04:32:35.996606985Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/01234","Output":"--- PASS: TestInvalidDamage/01234 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996608988Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/01234","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.99661066Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/00000"}
+{"Time":"2026-09-20T04:32:35.996612133Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/00000","Output":"=== RUN   TestInvalidDamage/00000\n"}
+{"Time":"2026-09-20T04:32:35.996614586Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/00000","Output":"--- PASS: TestInvalidDamage/00000 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996616529Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/00000","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996618152Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/-12345"}
+{"Time":"2026-09-20T04:32:35.996619634Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/-12345","Output":"=== RUN   TestInvalidDamage/-12345\n"}
+{"Time":"2026-09-20T04:32:35.996621717Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/-12345","Output":"--- PASS: TestInvalidDamage/-12345 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.99662345Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/-12345","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996625192Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/1.2345"}
+{"Time":"2026-09-20T04:32:35.996626685Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/1.2345","Output":"=== RUN   TestInvalidDamage/1.2345\n"}
+{"Time":"2026-09-20T04:32:35.996629118Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/1.2345","Output":"--- PASS: TestInvalidDamage/1.2345 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996630881Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/1.2345","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996634216Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/123,456"}
+{"Time":"2026-09-20T04:32:35.996635728Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/123,456","Output":"=== RUN   TestInvalidDamage/123,456\n"}
+{"Time":"2026-09-20T04:32:35.996638192Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/123,456","Output":"--- PASS: TestInvalidDamage/123,456 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996639955Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/123,456","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996693846Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/１２３４５"}
+{"Time":"2026-09-20T04:32:35.996696059Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/１２３４５","Output":"=== RUN   TestInvalidDamage/１２３４５\n"}
+{"Time":"2026-09-20T04:32:35.996699174Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/１２３４５","Output":"--- PASS: TestInvalidDamage/１２３４５ (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996701978Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/１２３４５","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996704251Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/1e5"}
+{"Time":"2026-09-20T04:32:35.996705764Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/1e5","Output":"=== RUN   TestInvalidDamage/1e5\n"}
+{"Time":"2026-09-20T04:32:35.996707887Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/1e5","Output":"--- PASS: TestInvalidDamage/1e5 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996709599Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/1e5","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996711232Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/1000000"}
+{"Time":"2026-09-20T04:32:35.996712724Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/1000000","Output":"=== RUN   TestInvalidDamage/1000000\n"}
+{"Time":"2026-09-20T04:32:35.996714797Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/1000000","Output":"--- PASS: TestInvalidDamage/1000000 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996717041Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/1000000","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996718633Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/12a45"}
+{"Time":"2026-09-20T04:32:35.996719965Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/12a45","Output":"=== RUN   TestInvalidDamage/12a45\n"}
+{"Time":"2026-09-20T04:32:35.996721808Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/12a45","Output":"--- PASS: TestInvalidDamage/12a45 (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996723591Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage/12a45","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996726014Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage","Output":"--- PASS: TestInvalidDamage (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996727607Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestInvalidDamage","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.996729309Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestZeroPolicyExplicit"}
+{"Time":"2026-09-20T04:32:35.996730671Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestZeroPolicyExplicit","Output":"=== RUN   TestZeroPolicyExplicit\n"}
+{"Time":"2026-09-20T04:32:35.996733135Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestZeroPolicyExplicit","Output":"--- PASS: TestZeroPolicyExplicit (0.00s)\n"}
+{"Time":"2026-09-20T04:32:35.996772074Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestZeroPolicyExplicit","Elapsed":0}
+{"Time":"2026-09-20T04:32:35.99677655Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestAllOneHundredThousandFiveDigitVectors"}
+{"Time":"2026-09-20T04:32:35.996778694Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestAllOneHundredThousandFiveDigitVectors","Output":"=== RUN   TestAllOneHundredThousandFiveDigitVectors\n"}
+{"Time":"2026-09-20T04:32:35.996870772Z","Action":"run","Package":"riftledger/internal/telegram","Test":"TestSendAndEditSameCard"}
+{"Time":"2026-09-20T04:32:35.996873306Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestSendAndEditSameCard","Output":"=== RUN   TestSendAndEditSameCard\n"}
+{"Time":"2026-09-20T04:32:36.00007404Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestSendAndEditSameCard","Output":"--- PASS: TestSendAndEditSameCard (0.00s)\n"}
+{"Time":"2026-09-20T04:32:36.000086579Z","Action":"pass","Package":"riftledger/internal/telegram","Test":"TestSendAndEditSameCard","Elapsed":0}
+{"Time":"2026-09-20T04:32:36.000092648Z","Action":"run","Package":"riftledger/internal/telegram","Test":"TestUnknownSendDoesNotAutoRetry"}
+{"Time":"2026-09-20T04:32:36.000096264Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestUnknownSendDoesNotAutoRetry","Output":"=== RUN   TestUnknownSendDoesNotAutoRetry\n"}
+{"Time":"2026-09-20T04:32:36.002996985Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestUnknownSendDoesNotAutoRetry","Output":"--- PASS: TestUnknownSendDoesNotAutoRetry (0.00s)\n"}
+{"Time":"2026-09-20T04:32:36.003007942Z","Action":"pass","Package":"riftledger/internal/telegram","Test":"TestUnknownSendDoesNotAutoRetry","Elapsed":0}
+{"Time":"2026-09-20T04:32:36.003012829Z","Action":"run","Package":"riftledger/internal/telegram","Test":"TestRateLimitRetryAndDefinitiveFailure"}
+{"Time":"2026-09-20T04:32:36.003016064Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestRateLimitRetryAndDefinitiveFailure","Output":"=== RUN   TestRateLimitRetryAndDefinitiveFailure\n"}
+{"Time":"2026-09-20T04:32:36.003022724Z","Action":"run","Package":"riftledger/internal/telegram","Test":"TestRateLimitRetryAndDefinitiveFailure/Too_Many_Requests"}
+{"Time":"2026-09-20T04:32:36.003026279Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestRateLimitRetryAndDefinitiveFailure/Too_Many_Requests","Output":"=== RUN   TestRateLimitRetryAndDefinitiveFailure/Too_Many_Requests\n"}
+{"Time":"2026-09-20T04:32:36.005068968Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestRateLimitRetryAndDefinitiveFailure/Too_Many_Requests","Output":"--- PASS: TestRateLimitRetryAndDefinitiveFailure/Too_Many_Requests (0.00s)\n"}
+{"Time":"2026-09-20T04:32:36.005080335Z","Action":"pass","Package":"riftledger/internal/telegram","Test":"TestRateLimitRetryAndDefinitiveFailure/Too_Many_Requests","Elapsed":0}
+{"Time":"2026-09-20T04:32:36.005085393Z","Action":"run","Package":"riftledger/internal/telegram","Test":"TestRateLimitRetryAndDefinitiveFailure/Forbidden"}
+{"Time":"2026-09-20T04:32:36.005088147Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestRateLimitRetryAndDefinitiveFailure/Forbidden","Output":"=== RUN   TestRateLimitRetryAndDefinitiveFailure/Forbidden\n"}
+{"Time":"2026-09-20T04:32:36.007143194Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestRateLimitRetryAndDefinitiveFailure/Forbidden","Output":"--- PASS: TestRateLimitRetryAndDefinitiveFailure/Forbidden (0.00s)\n"}
+{"Time":"2026-09-20T04:32:36.007155002Z","Action":"pass","Package":"riftledger/internal/telegram","Test":"TestRateLimitRetryAndDefinitiveFailure/Forbidden","Elapsed":0}
+{"Time":"2026-09-20T04:32:36.00716056Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestRateLimitRetryAndDefinitiveFailure","Output":"--- PASS: TestRateLimitRetryAndDefinitiveFailure (0.00s)\n"}
+{"Time":"2026-09-20T04:32:36.007163404Z","Action":"pass","Package":"riftledger/internal/telegram","Test":"TestRateLimitRetryAndDefinitiveFailure","Elapsed":0}
+{"Time":"2026-09-20T04:32:36.007166559Z","Action":"run","Package":"riftledger/internal/telegram","Test":"TestWebhookConflictNeverDeleted"}
+{"Time":"2026-09-20T04:32:36.007171667Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestWebhookConflictNeverDeleted","Output":"=== RUN   TestWebhookConflictNeverDeleted\n"}
+{"Time":"2026-09-20T04:32:36.00904519Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestWebhookConflictNeverDeleted","Output":"--- PASS: TestWebhookConflictNeverDeleted (0.00s)\n"}
+{"Time":"2026-09-20T04:32:36.00906516Z","Action":"pass","Package":"riftledger/internal/telegram","Test":"TestWebhookConflictNeverDeleted","Elapsed":0}
+{"Time":"2026-09-20T04:32:36.009068626Z","Action":"run","Package":"riftledger/internal/telegram","Test":"TestNetworkErrorsNeverExposeToken"}
+{"Time":"2026-09-20T04:32:36.009070699Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestNetworkErrorsNeverExposeToken","Output":"=== RUN   TestNetworkErrorsNeverExposeToken\n"}
+{"Time":"2026-09-20T04:32:36.009174565Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestNetworkErrorsNeverExposeToken","Output":"--- PASS: TestNetworkErrorsNeverExposeToken (0.00s)\n"}
+{"Time":"2026-09-20T04:32:36.009179072Z","Action":"pass","Package":"riftledger/internal/telegram","Test":"TestNetworkErrorsNeverExposeToken","Elapsed":0}
+{"Time":"2026-09-20T04:32:36.009182027Z","Action":"run","Package":"riftledger/internal/telegram","Test":"TestNotModifiedEditIsTreatedAsSent"}
+{"Time":"2026-09-20T04:32:36.009183609Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestNotModifiedEditIsTreatedAsSent","Output":"=== RUN   TestNotModifiedEditIsTreatedAsSent\n"}
+{"Time":"2026-09-20T04:32:36.011806592Z","Action":"output","Package":"riftledger/internal/telegram","Test":"TestNotModifiedEditIsTreatedAsSent","Output":"--- PASS: TestNotModifiedEditIsTreatedAsSent (0.00s)\n"}
+{"Time":"2026-09-20T04:32:36.011815976Z","Action":"pass","Package":"riftledger/internal/telegram","Test":"TestNotModifiedEditIsTreatedAsSent","Elapsed":0}
+{"Time":"2026-09-20T04:32:36.011818931Z","Action":"output","Package":"riftledger/internal/telegram","Output":"PASS\n"}
+{"Time":"2026-09-20T04:32:36.011886973Z","Action":"output","Package":"riftledger/internal/telegram","Output":"ok  \triftledger/internal/telegram\t0.017s\n"}
+{"Time":"2026-09-20T04:32:36.011893994Z","Action":"pass","Package":"riftledger/internal/telegram","Elapsed":0.017}
+{"Time":"2026-09-20T04:32:36.09519027Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestAllOneHundredThousandFiveDigitVectors","Output":"--- PASS: TestAllOneHundredThousandFiveDigitVectors (0.10s)\n"}
+{"Time":"2026-09-20T04:32:36.095227667Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestAllOneHundredThousandFiveDigitVectors","Elapsed":0.1}
+{"Time":"2026-09-20T04:32:36.095233485Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestPermutationInvariant"}
+{"Time":"2026-09-20T04:32:36.095235659Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestPermutationInvariant","Output":"=== RUN   TestPermutationInvariant\n"}
+{"Time":"2026-09-20T04:32:36.095238894Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestPermutationInvariant","Output":"--- PASS: TestPermutationInvariant (0.00s)\n"}
+{"Time":"2026-09-20T04:32:36.095241347Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestPermutationInvariant","Elapsed":0}
+{"Time":"2026-09-20T04:32:36.095244101Z","Action":"run","Package":"riftledger/pkg/bull","Test":"TestCompareRules"}
+{"Time":"2026-09-20T04:32:36.095245804Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestCompareRules","Output":"=== RUN   TestCompareRules\n"}
+{"Time":"2026-09-20T04:32:36.095248007Z","Action":"output","Package":"riftledger/pkg/bull","Test":"TestCompareRules","Output":"--- PASS: TestCompareRules (0.00s)\n"}
+{"Time":"2026-09-20T04:32:36.09524979Z","Action":"pass","Package":"riftledger/pkg/bull","Test":"TestCompareRules","Elapsed":0}
+{"Time":"2026-09-20T04:32:36.095252073Z","Action":"output","Package":"riftledger/pkg/bull","Output":"PASS\n"}
+{"Time":"2026-09-20T04:32:36.095609337Z","Action":"output","Package":"riftledger/pkg/bull","Output":"ok  \triftledger/pkg/bull\t0.101s\n"}
+{"Time":"2026-09-20T04:32:36.095623148Z","Action":"pass","Package":"riftledger/pkg/bull","Elapsed":0.101}

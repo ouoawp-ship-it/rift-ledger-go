@@ -1,0 +1,6 @@
+{
+  "passed": false,
+  "status": "blocked_by_environment",
+  "reason": "Chromium navigation to local test server failed: ERR_BLOCKED_BY_ADMINISTRATOR. No browser acceptance or real UI screenshots claimed.",
+  "script": "scripts/browser_e2e.py"
+}

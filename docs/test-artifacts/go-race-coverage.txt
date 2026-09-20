@@ -1,0 +1,6 @@
+	riftledger/cmd/server		coverage: 0.0% of statements
+ok  	riftledger/internal/app	1.300s	coverage: 64.6% of statements
+ok  	riftledger/internal/httpapi	1.104s	coverage: 54.1% of statements
+ok  	riftledger/internal/sqlite	1.016s	coverage: 65.3% of statements
+ok  	riftledger/internal/telegram	1.034s	coverage: 49.2% of statements
+ok  	riftledger/pkg/bull	2.433s	coverage: 91.8% of statements

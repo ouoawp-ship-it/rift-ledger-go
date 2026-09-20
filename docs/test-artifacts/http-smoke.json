@@ -1,0 +1,19 @@
+{
+  "real_telegram": false,
+  "isolated_database": true,
+  "checks": [
+    "Real HTTP health/auth/assets/calculator, unconfirmed initial rules",
+    "Explicit rules, whitelist no gifts, manual banker3, duplicate adjustment/bet idempotency, correct freezes",
+    "Closed rejects bets; changed preview rejects settlement; repeat settlement has no additional entries",
+    "Final player1299, house9700, fees1; zero frozen; next empty draft; all accounts/entries reconcile",
+    "Second-instance lock; graceful SIGTERM; restart preserves results, next draft and balanced ledger"
+  ],
+  "final_balances": {
+    "tg:123456789": 1299,
+    "house": 9700,
+    "fees": 1
+  },
+  "database_version": "3.46.1",
+  "passed": true,
+  "go_version": "go version go1.23.2 linux/amd64"
+}

@@ -1,0 +1,16 @@
+{
+  "top_level_tests": 50,
+  "passed_tests_including_subtests": 93,
+  "by_package": {
+    "riftledger/internal/app": 28,
+    "riftledger/internal/sqlite": 4,
+    "riftledger/internal/httpapi": 6,
+    "riftledger/pkg/bull": 6,
+    "riftledger/internal/telegram": 6
+  },
+  "go_vet": "passed",
+  "javascript_syntax": "passed",
+  "shell_syntax": "passed",
+  "compose_yaml_parse": "passed_not_docker_runtime_validation",
+  "env_initialization": "passed_random_64_hex_permission_600_and_no_overwrite"
+}

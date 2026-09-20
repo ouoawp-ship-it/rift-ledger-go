@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>峡谷账房 · Go 服务端</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body>
+<header><strong>峡谷账房</strong><span>Go 服务端 · 英雄联盟伤害牛牛</span><span id="connection">未连接</span></header>
+<section id="login-box"><form id="login-form"><label>管理员密钥 <input id="token" type="password" autocomplete="off" minlength="32" maxlength="128" required size="44"></label><button type="submit">连接管理服务</button></form><small>密钥仅保留在当前页面内存，不写入浏览器存储。请通过 SSH 隧道或 HTTPS 使用。</small></section>
+<div id="notice" role="status" aria-live="polite">输入部署时生成的 ADMIN_TOKEN。</div>
+<main id="workspace" hidden>
+<nav><button data-tab="round">本期控制</button><button data-tab="players">玩家与积分</button><button data-tab="rules">规则设置</button><button data-tab="requests">上下分请求</button><button data-tab="champions">英雄数据</button><button data-tab="bot">机器人设置</button><button data-tab="history">历史与流水</button><button data-tab="messages">发送记录</button><button data-tab="calculator">伤害计算器</button><button data-tab="checks">运行检查</button><button id="refresh">刷新</button><button id="logout">退出</button></nav>
+<section class="page" id="page-round">
+<div class="line"><strong id="round-state">尚无期次</strong><span id="round-version"></span></div>
+<fieldset><legend>期号与敌方英雄配置</legend>
+<label>期号 <input id="number" placeholder="2026-09-20-0001" size="24"></label> <button id="create-round">创建首期草稿</button>
+<p class="hint">只填写本场敌方五个英雄。系统按 ID 和名称去重，但未接入游戏客户端，不能自动核实敌我阵营。</p>
+<div class="table-wrap"><table><thead><tr><th>位置</th><th>稳定英雄 ID</th><th>英雄名称</th><th>本期庄家（必须手选）</th></tr></thead><tbody id="hero-inputs"></tbody></table></div>
+<div class="line"><button id="save-heroes">保存英雄与庄家</button><button id="open-round">开始答题</button><button id="close-round">停止答题／封盘</button></div>
+<small>保存英雄不会自动开放下注。开始后锁定英雄、庄家、期号和本期规则快照。</small></fieldset>
+<fieldset><legend>手动开奖</legend>
+<div class="line"><label>实际对局时长（秒） <input id="duration" type="number" min="1" max="86400" placeholder="例如1200"></label><span>300秒及以下整期流局；301秒起正常判定。</span></div>
+<div id="damage-inputs" class="damage-grid"></div>
+<div class="line"><button id="preview">生成结算预览</button><button id="settle" disabled>确认结算并进入下一期</button></div>
+<div id="preview-result"><p class="hint">先封盘，再输入伤害。任何输入修改都会使旧预览失效。结算成功后自动生成下一期空草稿，不自动开放下注。</p></div>
+</fieldset>
+<fieldset><legend>本期最近200笔注单</legend><div id="round-bets" class="table-wrap"></div></fieldset>
+</section>
+<section class="page" id="page-players" hidden>
+<fieldset><legend>人工开通／停用玩家</legend><form id="player-form" class="line"><label>Telegram ID <input id="player-tg" inputmode="numeric" required></label><label>称呼 <input id="player-name" required maxlength="60"></label><label><input type="checkbox" id="player-enabled" checked>允许下注</label><button type="submit">保存玩家</button></form><small>身份以真实 Telegram ID 为准。开通不赠分，加分不自动开通；停用不影响已受理注单正常结算。</small></fieldset>
+<fieldset><legend>人工上下分</legend><form id="adjust-form"><div class="line"><label>账户 <input id="adjust-id" placeholder="house 或 tg:123456789" required size="25"></label><button id="choose-house" type="button">选择运营方</button><button id="choose-fees" type="button">选择费用账户</button><label>变化量 <input id="adjust-delta" type="number" step="1" required placeholder="加分正数，减分负数"></label></div><div class="line"><label>备注 <input id="adjust-note" required maxlength="200" size="50"></label><button type="submit">确认调分</button></div></form><small>全部调分均留双边流水。庄家必须有足额承付积分；不得把玩家冻结积分当作庄家资金。</small></fieldset>
+<div class="line"><button id="players-prev">上一页</button><button id="players-next">下一页</button><span id="players-page"></span></div><div id="players-table" class="table-wrap"></div>
+</section>
+<section class="page" id="page-rules" hidden>
+<fieldset><legend>后续期次规则模板</legend><p>已开始期次使用自己的快照。保存这里只影响之后开始的期次，不重算历史。</p><div id="rules-version"></div>
+<form id="rules-form"><div class="rules-grid"><div class="table-wrap"><table><thead><tr><th>牛型</th><th>闲家获胜净盈利倍数</th></tr></thead><tbody id="odds-inputs"></tbody></table></div><div>
+<label class="block">最低本金 <input id="min-stake" type="number" min="1" max="1000000" required></label>
+<label class="block">最高本金 <input id="max-stake" type="number" min="1" max="1000000" required></label>
+<label class="block">费用扣取时点 <select id="fee-timing" required><option value="">请选择</option><option value="settlement">结算时扣取，先冻结本金＋费用</option><option value="acceptance">成功受理时扣取，冻结本金</option></select></label>
+<label class="block">流局费用 <select id="void-fee" required><option value="">请选择</option><option value="refund">退费／不收费</option><option value="charge">保留本笔费用</option></select></label>
+<label class="block">费用归属 <select id="fee-recipient" required><option value="">请选择</option><option value="fees">独立费用账户</option><option value="house">运营方账户（报表仍分列）</option></select></label>
+<label class="block">0＋0＋0能否成牛 <select id="zero-triple" required><option value="">请选择</option><option value="true">允许，0是10的整数倍</option><option value="false">不允许，三数之和需10或20</option></select></label>
+<p class="hint">固定规则：三位数该英雄流局；四位数增加一个1；六位取后五位并保留零；同牛只比较最大数字，仍同则庄赢。庄家流局时整期流局。本版不增加炸弹牛、五小牛等特殊牌型。</p>
+<p class="hint">闲家输仅扣本金1倍。累计本金≤账面余额1/4。逐笔费用：本金≤100收1，>100收2。所有金额为整数账面积分。</p>
+<label class="block"><input type="checkbox" id="rules-confirmed">我已核实并确认上述口径，用于之后的开盘期次</label>
+<div class="line"><button type="submit">保存后续规则</button><button type="button" id="reload-rules">重新读取后端配置</button></div>
+</div></div></form></fieldset>
+</section>
+<section class="page" id="page-history" hidden>
+<fieldset><legend>历史期次</legend><div class="line"><button id="history-prev">上一页</button><button id="history-next">下一页</button><span id="history-page"></span></div><div id="history-table" class="table-wrap"></div><div id="history-detail"></div></fieldset>
+<fieldset><legend>账本流水</legend><div class="line"><label>账户筛选 <input id="entry-account" placeholder="留空查全部；或house、tg:用户ID"></label><button id="entries-load">查询</button><button id="entries-prev">上一页</button><button id="entries-next">下一页</button><span id="entries-page"></span></div><div id="entries-table" class="table-wrap"></div><small>游戏、费用、退费和人工调分分列；所有时间显示为北京时间。</small></fieldset>
+</section>
+<section class="page" id="page-messages" hidden>
+<p>同一期群卡片原地更新；注单公示独立留存。账目结算与通知送达是两个状态。</p><p class="hint">发送结果未知不会自动重发，以免刷屏。请先在 Telegram 核实，再确认送达或明确重试。未处理任务会阻止同一会话的后续消息，其他会话不受影响。</p>
+<div class="line"><button id="messages-prev">上一页</button><button id="messages-next">下一页</button><span id="messages-page"></span></div><div id="messages-table" class="table-wrap"></div>
+</section>
+<section class="page" id="page-requests" hidden><fieldset><legend>上下分请求</legend><div id="requests-count"></div><button id="requests-refresh">刷新</button><div id="requests-table" class="table-wrap"></div></fieldset></section>
+<section class="page" id="page-champions" hidden><fieldset><legend>英雄数据</legend><div id="champion-status"></div><button id="champions-refresh">刷新官方英雄数据</button><input id="champion-search" placeholder="搜索中文或英文英雄名"><div id="champions-table" class="table-wrap"></div></fieldset></section>
+<section class="page" id="page-bot" hidden><fieldset><legend>机器人设置</legend><p>保存写入受保护的运行配置文件；Token只显示掩码，保存后需重启服务生效。测试连接不会向群发送消息。</p><form id="bot-form"><label>Bot Token <input id="bot-token" type="password" autocomplete="off"></label><label>机器人用户名 <input id="bot-username"></label><label>群 ID <input id="bot-group" type="number"></label><label>Topic ID <input id="bot-topic" type="number"></label><label>管理员 TG ID <input id="bot-admin" type="number"></label><label>客服用户名 <input id="bot-support"></label><label><input id="bot-enabled" type="checkbox">启用 Telegram</label><button>保存配置</button></form><div class="line"><button id="bot-test">测试机器人连接</button><button id="bot-test-group">测试群发送</button></div><div id="bot-status"></div></fieldset></section>
+<section class="page" id="page-calculator" hidden>
+<fieldset><legend>独立伤害计算（不创建注单、不改余额）</legend><form id="calc-form" class="line"><label>闲家原始伤害 <input id="calc-damage" value="12745" required inputmode="numeric"></label><label>庄家原始伤害 <input id="calc-banker" value="12710" inputmode="numeric"></label><button type="submit">计算并比较</button></form><p>示例：12710为牛1，12745为牛9。伤害更大不一定赢，例如99999为没牛。</p><div id="calc-result"></div></fieldset>
+</section>
+<section class="page" id="page-checks" hidden>
+<fieldset><legend>服务运行</legend><div id="runtime"></div><p>本版为单服务进程、单运营方、单公示群。切勿与旧 C# 程序同时消费同一个机器人 Token。</p></fieldset>
+<fieldset><legend>账本与冻结对账</legend><button id="reconcile">执行只读检查</button><div id="reconcile-result"></div></fieldset>
+<fieldset><legend>最近50条操作日志</legend><div id="audit-table" class="table-wrap"></div></fieldset>
+</section>
+</main>
+<footer>人工录入伤害 · 无游戏客户端采集 · 无充值提币接口 · 本页面不保存管理员密钥</footer>
+</body></html>

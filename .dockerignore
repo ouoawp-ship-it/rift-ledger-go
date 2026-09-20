@@ -1,0 +1,7 @@
+.git
+.env
+data
+backups
+bin
+**/__pycache__
+*.zip
