@@ -44,7 +44,9 @@ func loadCJKFace() font.Face {
 	for _, path := range paths {
 		b, err := os.ReadFile(path); if err != nil { continue }
 		if collection, err := opentype.ParseCollection(b); err == nil {
-			if face, err := opentype.NewFace(collection.Font(0), &opentype.FaceOptions{Size: 34, DPI: 72, Hinting: font.HintingFull}); err == nil { return face }
+			if f, err := collection.Font(0); err == nil {
+				if face, err := opentype.NewFace(f, &opentype.FaceOptions{Size: 34, DPI: 72, Hinting: font.HintingFull}); err == nil { return face }
+			}
 		}
 		if f, err := opentype.Parse(b); err == nil {
 			if face, err := opentype.NewFace(f, &opentype.FaceOptions{Size: 34, DPI: 72, Hinting: font.HintingFull}); err == nil { return face }
