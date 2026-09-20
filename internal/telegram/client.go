@@ -9,7 +9,9 @@ import (
 	"io"
 	"log/slog"
 	"mime/multipart"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -27,10 +29,59 @@ type APIError struct {
 	RetryAfter  int64
 }
 
+// Network and incomplete response failures can be retried during read-only startup.
+type connectionError struct{ message string }
+
+func (e *connectionError) Error() string { return e.message }
+
+func ConnectionRetryDelay(err error) (time.Duration, bool) {
+	var network *connectionError
+	if errors.As(err, &network) {
+		return 5 * time.Second, true
+	}
+	var api *APIError
+	if errors.As(err, &api) {
+		if api.Code == 429 {
+			delay := 5 * time.Second
+			if api.RetryAfter > 5 {
+				delay = time.Duration(api.RetryAfter) * time.Second
+			}
+			return delay, true
+		}
+		if api.Code >= 500 {
+			return 5 * time.Second, true
+		}
+	}
+	// Invalid credentials, conflicting consumers/webhooks, identity and DB errors need attention.
+	return 0, false
+}
+
 func (e *APIError) Error() string { return fmt.Sprintf("Telegram错误%d: %s", e.Code, e.Description) }
 func New(token string) *Client {
 	return &Client{Token: token, BaseURL: "https://api.telegram.org", HTTP: &http.Client{Timeout: 40 * time.Second}}
 }
+
+func networkReason(err error) string {
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) {
+		return "DNS解析失败"
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return "连接超时"
+	}
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) {
+		if strings.Contains(strings.ToLower(urlErr.Err.Error()), "connection refused") {
+			return "连接被拒绝"
+		}
+		if strings.Contains(strings.ToLower(urlErr.Err.Error()), "no route") {
+			return "没有到目标的网络路由"
+		}
+	}
+	return "网络不可达或TLS连接失败"
+}
+
 func (c *Client) Call(ctx context.Context, method string, payload any, result any) error {
 	body, e := json.Marshal(payload)
 	if e != nil {
@@ -43,12 +94,12 @@ func (c *Client) Call(ctx context.Context, method string, payload any, result an
 	req.Header.Set("Content-Type", "application/json")
 	resp, e := c.HTTP.Do(req)
 	if e != nil {
-		return errors.New("Telegram网络请求失败；发送结果可能未知（未记录含Token的请求URL）")
+		return &connectionError{fmt.Sprintf("Telegram %s 网络请求失败（%s）", method, networkReason(e))}
 	}
 	defer resp.Body.Close()
 	raw, e := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
 	if e != nil {
-		return errors.New("Telegram响应读取失败，结果未知")
+		return &connectionError{"Telegram响应读取失败，结果未知"}
 	}
 	var envelope struct {
 		OK          bool            `json:"ok"`
@@ -60,7 +111,7 @@ func (c *Client) Call(ctx context.Context, method string, payload any, result an
 		} `json:"parameters"`
 	}
 	if e = json.Unmarshal(raw, &envelope); e != nil {
-		return errors.New("Telegram响应格式异常，结果未知")
+		return &connectionError{"Telegram响应格式异常，结果未知"}
 	}
 	if !envelope.OK {
 		code := envelope.Code

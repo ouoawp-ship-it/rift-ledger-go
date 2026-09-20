@@ -140,9 +140,26 @@ func run() error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if e := telegram.New(botToken).Run(ctx, s); e != nil {
-				_ = s.BotStatus("已停止：" + e.Error())
-				slog.Error("Telegram接收器停止；网页仍可用", "error", e)
+			for ctx.Err() == nil {
+				err := telegram.New(botToken).Run(ctx, s)
+				if err == nil || ctx.Err() != nil {
+					return
+				}
+				delay, retry := telegram.ConnectionRetryDelay(err)
+				if !retry {
+					_ = s.BotStatus("已停止：" + err.Error())
+					slog.Error("Telegram接收器停止；需要检查配置", "error", err)
+					return
+				}
+				_ = s.BotStatus(fmt.Sprintf("连接失败，将在%.0f秒后重试：%s", delay.Seconds(), err))
+				slog.Error("Telegram接收器异常；将自动重试", "error", err, "retry_after", delay.Seconds())
+				timer := time.NewTimer(delay)
+				select {
+				case <-ctx.Done():
+					timer.Stop()
+					return
+				case <-timer.C:
+				}
 			}
 		}()
 	}

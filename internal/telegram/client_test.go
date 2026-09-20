@@ -3,8 +3,11 @@ package telegram
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -150,8 +153,34 @@ func TestNetworkErrorsNeverExposeToken(t *testing.T) {
 	c.BaseURL = "http://127.0.0.1:1"
 	c.HTTP.Timeout = time.Second
 	e := c.Call(context.Background(), "sendMessage", map[string]any{}, nil)
-	if e == nil || strings.Contains(e.Error(), c.Token) {
+	if e == nil || strings.Contains(e.Error(), c.Token) || !strings.Contains(e.Error(), "连接被拒绝") {
 		t.Fatal("token leaked")
+	}
+}
+
+func TestNetworkErrorReasonDoesNotExposeURL(t *testing.T) {
+	e := &url.Error{Op: "Post", URL: "https://api.telegram.org/botsuper-secret-token/getMe", Err: &net.DNSError{Err: "no such host", Name: "api.telegram.org"}}
+	if got := networkReason(e); got != "DNS解析失败" {
+		t.Fatalf("unexpected diagnostic: %s", got)
+	}
+}
+
+func TestConnectionRetryPolicy(t *testing.T) {
+	for _, tt := range []struct {
+		err  error
+		want time.Duration
+	}{
+		{&connectionError{"timeout"}, 5 * time.Second},
+		{&APIError{Code: 503}, 5 * time.Second},
+		{&APIError{Code: 429, RetryAfter: 30}, 30 * time.Second},
+		{&APIError{Code: 401}, 0},
+		{&APIError{Code: 409}, 0},
+		{errors.New("webhook or identity mismatch"), 0},
+	} {
+		delay, retry := ConnectionRetryDelay(tt.err)
+		if delay != tt.want || retry != (tt.want > 0) {
+			t.Fatalf("%v => %v, %v", tt.err, delay, retry)
+		}
 	}
 }
 func TestNotModifiedEditIsTreatedAsSent(t *testing.T) {
