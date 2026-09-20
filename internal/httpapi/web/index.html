@@ -30,19 +30,11 @@
 <div class="line"><button id="players-prev">上一页</button><button id="players-next">下一页</button><span id="players-page"></span></div><div id="players-table" class="table-wrap"></div>
 </section>
 <section class="page" id="page-rules" hidden>
-<fieldset><legend>后续期次规则模板</legend><p>已开始期次使用自己的快照。保存这里只影响之后开始的期次，不重算历史。玩家盈利按倍率计算，结果四舍五入为整数积分；0倍表示不产生盈利。</p><div id="rules-version"></div>
-<form id="rules-form"><div class="rules-grid"><div class="table-wrap"><table><thead><tr><th>牛型</th><th>闲家获胜净盈利倍数（支持0、0.5、1.2，最多两位小数）</th></tr></thead><tbody id="odds-inputs"></tbody></table></div><div>
-<label class="block">最低本金 <input id="min-stake" type="number" min="1" max="1000000" required></label>
-<label class="block">最高本金 <input id="max-stake" type="number" min="1" max="1000000" required></label>
-
-
-
-<label class="block">0＋0＋0能否成牛 <select id="zero-triple" required><option value="">请选择</option><option value="true">允许，0是10的整数倍</option><option value="false">不允许，三数之和需10或20</option></select></label>
-<p class="hint">固定规则：三位数该英雄流局；四位数增加一个1；六位取后五位并保留零；同牛只比较最大数字，仍同则庄赢。庄家流局时整期流局。本版不增加炸弹牛、五小牛等特殊牌型。赔率支持0至100倍、最多两位小数，结算盈利按整数积分四舍五入。</p>
-<p class="hint">闲家输仅扣本金1倍。玩家盈利按赔率直接增加余额，玩家亏损按本金扣减；不收取手续费。所有金额为整数账面积分。</p>
-
-<div class="line"><button type="submit">保存后续规则</button><button type="button" id="reload-rules">重新读取后端配置</button></div>
-</div></div></form></fieldset>
+<div class="rules-shell">
+<div class="rules-fixed" role="note"><strong>固定规则</strong><p>三位数该英雄流局；四位数增加一个1；六位取后五位并保留零；同牛只比较最大数字，仍同则庄赢。庄家流局时整期流局。本版不增加炸弹牛、五小牛等特殊牌型。赔率支持0至100倍、最多两位小数，结算盈利按整数积分四舍五入。</p><p>闲家输仅扣本金1倍。玩家盈利按赔率直接增加余额，玩家亏损按本金扣减；不收取手续费。所有金额为整数账面积分。</p></div>
+<fieldset class="rules-card"><legend>赔率设置</legend><div class="rules-meta"><span id="rules-version"></span><span>保存设置只影响之后开始的期次，不重算历史；0倍不产生盈利，盈利按倍率计算并四舍五入为整数积分。</span></div>
+<form id="rules-form"><div class="rules-layout"><section class="odds-panel"><div class="panel-heading"><h3>闲家获胜净盈利倍数</h3></div><div id="odds-inputs" class="odds-grid"></div></section><section class="limits-panel"><h3>下注金额</h3><label class="setting-row">最低本金<input id="min-stake" type="number" min="1" max="1000000" required></label><label class="setting-row">最高本金<input id="max-stake" type="number" min="1" max="1000000" required></label><label class="setting-row">0＋0＋0能否成牛<select id="zero-triple" required><option value="">请选择</option><option value="true">允许</option><option value="false">不允许</option></select></label></section></div><div class="rules-actions"><button type="submit" class="primary-action">保存设置</button></div></form></fieldset>
+</div>
 </section>
 <section class="page" id="page-history" hidden>
 <fieldset><legend>历史期次</legend><div class="line"><button id="history-prev">上一页</button><button id="history-next">下一页</button><span id="history-page"></span></div><div id="history-table" class="table-wrap"></div><div id="history-detail"></div></fieldset>

@@ -82,7 +82,7 @@ def main():
                         page.locator(selector).select_option(value)
                     page.locator('#rules-confirmed').check()
                     page.locator('#rules-form button[type="submit"]').click()
-                    expect(page.locator("#notice")).to_contain_text("规则模板已保存")
+                    expect(page.locator("#notice")).to_contain_text("规则设置已保存")
                     report["checks"].append("First-run explicit rule confirmation through browser")
                     page.locator('[data-tab="players"]').click()
                     page.locator('#player-tg').fill("123456789")
