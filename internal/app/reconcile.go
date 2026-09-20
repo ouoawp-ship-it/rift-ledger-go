@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"riftledger/internal/sqlite"
 )
 
@@ -21,11 +22,13 @@ func (s *Service) Reconcile() (any, error) {
 				return e
 			}
 			reserve := b.Int("stake")
-			if rules.FeeTiming == "settlement" {
+			if !s.PlayerOnly && rules.FeeTiming == "settlement" {
 				reserve += b.Int("fee")
 			}
 			expected[b["account_id"]] += reserve
-			expected["house"] += b.Int("stake") * rules.MaxPayout()
+			if !s.PlayerOnly {
+				expected["house"] += int64(math.Ceil(float64(b.Int("stake")) * rules.MaxPayout()))
+			}
 			if rules.FeeTiming == "acceptance" && rules.VoidFee == "refund" {
 				expected[rules.FeeRecipient] += b.Int("fee")
 			}
@@ -44,7 +47,7 @@ func (s *Service) Reconcile() (any, error) {
 				issues = append(issues, "冻结与待结算注单不符："+r["id"])
 			}
 		}
-		if sum != 0 {
+		if !s.PlayerOnly && sum != 0 {
 			issues = append(issues, fmt.Sprintf("所有账户合计不为零：%d", sum))
 		}
 		batches, e := tx.Query("SELECT batch,SUM(delta) AS net,COUNT(*) AS n FROM entries GROUP BY batch HAVING SUM(delta)!=0 OR COUNT(*)!=2")
@@ -52,6 +55,9 @@ func (s *Service) Reconcile() (any, error) {
 			return e
 		}
 		for _, b := range batches {
+			if s.PlayerOnly {
+				continue
+			}
 			issues = append(issues, "不平衡流水批次："+b["batch"])
 		}
 		count, e := tx.One("SELECT COUNT(*) AS n FROM entries")

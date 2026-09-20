@@ -170,4 +170,3 @@ func TestNotModifiedEditIsTreatedAsSent(t *testing.T) {
 		t.Fatal(rows)
 	}
 }
-

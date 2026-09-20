@@ -345,7 +345,7 @@ func TestLedgerImmutableAndRollback(t *testing.T) {
 func TestSettingsValidationAndOptimisticVersion(t *testing.T) {
 	s, _ := fixture(t, "settlement", "refund", "fees")
 	r := DefaultRules()
-	r.Payout = []int64{1}
+	r.Payout = []float64{1}
 	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.SaveRules(tx, 2, r) })
 	r = DefaultRules()
 	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.SaveRules(tx, 1, r) })

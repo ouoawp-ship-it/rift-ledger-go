@@ -116,6 +116,9 @@ func run() error {
 	if e != nil {
 		return e
 	}
+	if e = s.EnablePlayerOnly(); e != nil {
+		return e
+	}
 	s.Settings = settings
 	s.Champions, e = champion.New(filepath.Join(dir, "champions"))
 	if e != nil {
@@ -130,7 +133,7 @@ func run() error {
 	if e != nil {
 		return e
 	}
-	server := &http.Server{Handler: httpapi.New(s, token), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 60 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
+	server := &http.Server{Handler: httpapi.NewWithRestart(s, token, func() { _ = syscall.Kill(os.Getpid(), syscall.SIGTERM) }), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 60 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
 	var wg sync.WaitGroup
 	if botToken != "" {
 		_ = s.BotStatus("正在连接Telegram")

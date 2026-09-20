@@ -105,9 +105,9 @@ func (s *Service) roundCard(tx *sqlite.Tx, r Round, heading string) error {
 		text += "\n"
 	}
 	if r.Result != nil {
-		text += fmt.Sprintf("时长%d秒｜玩家游戏合计%+d｜庄家游戏%+d｜费用%d", r.Result.DurationSeconds, r.Result.PlayerGameDelta, r.Result.HouseGameDelta, r.Result.FeeTotal)
+		text += fmt.Sprintf("时长%d秒｜玩家游戏合计%+d", r.Result.DurationSeconds, r.Result.PlayerGameDelta)
 	} else {
-		text += fmt.Sprintf("单笔%d–%d；累计不超过余额1/4。费用≤100收1，>100收2。", r.Rules.MinStake, r.Rules.MaxStake)
+		text += fmt.Sprintf("单笔%d–%d；累计不超过余额1/4。玩家模式不收取费用。", r.Rules.MinStake, r.Rules.MaxStake)
 	}
 	return s.queue(tx, fmt.Sprintf("round-card:%s:%s", r.ID, r.State), s.Config.GroupID, "round:"+r.ID, text, true)
 }

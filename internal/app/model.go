@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"regexp"
 	"time"
 
@@ -33,44 +34,35 @@ func PublicError(e error) (int, string) {
 }
 
 type Rules struct {
-	Confirmed    bool    `json:"confirmed"`
-	Payout       []int64 `json:"payout"`
-	MinStake     int64   `json:"min_stake"`
-	MaxStake     int64   `json:"max_stake"`
-	FeeTiming    string  `json:"fee_timing"`    // acceptance or settlement; explicit operator confirmation
-	VoidFee      string  `json:"void_fee"`      // refund or charge
-	FeeRecipient string  `json:"fee_recipient"` // fees or house
-	ZeroTriple   bool    `json:"zero_triple"`
+	Confirmed    bool      `json:"confirmed"`
+	Payout       []float64 `json:"payout"`
+	MinStake     int64     `json:"min_stake"`
+	MaxStake     int64     `json:"max_stake"`
+	FeeTiming    string    `json:"fee_timing"`    // acceptance or settlement; explicit operator confirmation
+	VoidFee      string    `json:"void_fee"`      // refund or charge
+	FeeRecipient string    `json:"fee_recipient"` // fees or house
+	ZeroTriple   bool      `json:"zero_triple"`
 }
 
 func DefaultRules() Rules {
-	return Rules{Payout: []int64{1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 4}, MinStake: 20, MaxStake: 300, FeeTiming: "settlement", VoidFee: "refund", FeeRecipient: "fees", ZeroTriple: true}
+	return Rules{Confirmed: false, Payout: []float64{1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 4}, MinStake: 20, MaxStake: 300, ZeroTriple: true}
 }
 func (r Rules) Validate() error {
 	if len(r.Payout) != 11 {
 		return bad("赔率必须包含没牛至牛牛共11项")
 	}
 	for _, v := range r.Payout {
-		if v < 1 || v > 100 {
-			return bad("每项赔率必须为1至100的整数净盈利倍数")
+		if v < 0 || v > 100 || math.Round(v*100) != v*100 {
+			return bad("每项赔率必须为0至100之间、最多两位小数的净盈利倍数")
 		}
 	}
 	if r.MinStake < 1 || r.MaxStake < r.MinStake || r.MaxStake > 1_000_000 {
 		return bad("下注限额必须为1至1000000之间的整数，且最低不超过最高")
 	}
-	if r.FeeTiming != "acceptance" && r.FeeTiming != "settlement" {
-		return bad("请选择受理时扣费或结算时扣费")
-	}
-	if r.VoidFee != "refund" && r.VoidFee != "charge" {
-		return bad("请选择流局退费或保留费用")
-	}
-	if r.FeeRecipient != "fees" && r.FeeRecipient != "house" {
-		return bad("费用归属只能为独立费用账户或运营方")
-	}
 	return nil
 }
-func (r Rules) MaxPayout() int64 {
-	m := int64(0)
+func (r Rules) MaxPayout() float64 {
+	m := float64(0)
 	for _, v := range r.Payout {
 		if v > m {
 			m = v
@@ -162,15 +154,15 @@ type SettleInput struct {
 	PreviewToken    string   `json:"preview_token,omitempty"`
 }
 type Line struct {
-	BetID      string `json:"bet_id"`
-	AccountID  string `json:"account_id"`
-	Position   int    `json:"position"`
-	Stake      int64  `json:"stake"`
-	Fee        int64  `json:"fee"`
-	Outcome    string `json:"outcome"`
-	GameDelta  int64  `json:"game_delta"`
-	NetDelta   int64  `json:"net_delta"`
-	Multiplier int64  `json:"multiplier"`
+	BetID      string  `json:"bet_id"`
+	AccountID  string  `json:"account_id"`
+	Position   int     `json:"position"`
+	Stake      int64   `json:"stake"`
+	Fee        int64   `json:"fee"`
+	Outcome    string  `json:"outcome"`
+	GameDelta  int64   `json:"game_delta"`
+	NetDelta   int64   `json:"net_delta"`
+	Multiplier float64 `json:"multiplier"`
 }
 type PositionResult struct {
 	Position int       `json:"position"`

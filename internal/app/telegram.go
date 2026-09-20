@@ -194,11 +194,7 @@ func (s *Service) HandleUpdate(u TGUpdate) error {
 							if e != nil {
 								return e
 							}
-							timing := "结算时扣取"
-							if r.Rules.FeeTiming == "acceptance" {
-								timing = "已扣取"
-							}
-							reply = fmt.Sprintf("下注成功\n%s期｜%d号 %s\n本金%d｜逐笔费用%d（%s）\n余额%d｜冻结%d｜可用%d\n注单：%s\n已受理注单不能通过编辑、撤回消息修改。", r.Number, b.Position, r.Heroes[b.Position-1].Name, b.Stake, b.Fee, timing, after.Balance, after.Locked, after.Available, b.ID)
+							reply = fmt.Sprintf("下注成功\n%s期｜%d号 %s\n本金%d\n余额%d｜冻结%d｜可用%d\n注单：%s\n已受理注单不能通过编辑、撤回消息修改。", r.Number, b.Position, r.Heroes[b.Position-1].Name, b.Stake, after.Balance, after.Locked, after.Available, b.ID)
 						}
 						if _, e = tx.Exec("RELEASE bet_attempt"); e != nil {
 							return e
@@ -256,7 +252,7 @@ func (s *Service) privateQuery(tx *sqlite.Tx, a Account, text string) (string, e
 		if e != nil {
 			return "", e
 		}
-		return fmt.Sprintf("个人中心\nTelegram ID：%d\n余额%d｜冻结%d｜可用%d\n最近三个北京时间自然日：\n游戏变化%+d｜费用净变化%+d\n人工调分不计入游戏战绩。\n登记时间：%s", a.TelegramID, a.Balance, a.Locked, a.Available, totals.Int("game"), totals.Int("fees"), time.Unix(a.CreatedAt, 0).In(zone).Format("2006-01-02 15:04")), nil
+		return fmt.Sprintf("个人中心\nTelegram ID：%d\n余额%d｜冻结%d｜可用%d\n最近三个北京时间自然日：\n游戏变化%+d\n人工调分不计入游戏战绩。\n登记时间：%s", a.TelegramID, a.Balance, a.Locked, a.Available, totals.Int("game"), time.Unix(a.CreatedAt, 0).In(zone).Format("2006-01-02 15:04")), nil
 	case isSupport(text):
 		if s.Config.SupportUsername != "" {
 			return "联系客服：\n@" + s.Config.SupportUsername, nil

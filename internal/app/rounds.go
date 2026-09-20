@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -9,6 +10,21 @@ import (
 	"riftledger/internal/sqlite"
 	"riftledger/pkg/bull"
 )
+
+func playerGameDelta(tx *sqlite.Tx, accountID string, delta int64, batch, roundID, betID string) error {
+	a, e := getAccount(tx, accountID)
+	if e != nil {
+		return e
+	}
+	if delta < 0 && a.Balance+delta < 0 {
+		return conflict("玩家余额不足以承担本期亏损")
+	}
+	if _, e = tx.Exec("UPDATE accounts SET balance=balance+? WHERE id=?", delta, accountID); e != nil {
+		return e
+	}
+	_, e = tx.Exec("INSERT INTO entries(batch,account_id,round_id,bet_id,kind,delta,balance_after,note,created_at) VALUES(?,?,?,?,?,?,?,?,?)", batch, accountID, roundID, betID, "GAME", delta, a.Balance+delta, "玩家游戏盈亏", now())
+	return e
+}
 
 func validateConfiguration(in ConfigureRound, complete bool) error {
 	if !validNumber(in.Number) {
@@ -118,7 +134,7 @@ func (s *Service) OpenRound(tx *sqlite.Tx, id string) (any, error) {
 		return nil, e
 	}
 	if !rules.Confirmed {
-		return nil, conflict("请先在规则页明确确认费用时点、流局处理和零组合口径，再开始")
+		return nil, conflict("请先在规则页保存并确认赔率和零组合口径，再开始")
 	}
 	if e = rules.Validate(); e != nil {
 		return nil, e
@@ -185,7 +201,7 @@ func (s *Service) PlaceBet(tx *sqlite.Tx, in BetInput) (Bet, error) {
 		return empty, e
 	}
 	riskBalance := a.Balance
-	if r.Rules.FeeTiming == "acceptance" {
+	if !s.PlayerOnly && r.Rules.FeeTiming == "acceptance" {
 		riskBalance += sums.Int("fees")
 	}
 	if sums.Int("stakes")+in.Stake > riskBalance/4 {
@@ -198,26 +214,34 @@ func (s *Service) PlaceBet(tx *sqlite.Tx, in BetInput) (Bet, error) {
 	if count.Int("n") >= MaxBetsPerRound {
 		return empty, bad("本期已达到10000笔安全上限")
 	}
-	charge := fee(in.Stake)
-	if a.Available < in.Stake+charge {
-		return empty, bad("可用积分不足以覆盖本金及本笔费用")
+	charge := int64(0)
+	if !s.PlayerOnly {
+		charge = fee(in.Stake)
 	}
-	house, e := getAccount(tx, "house")
-	if e != nil {
-		return empty, e
+	if !s.PlayerOnly {
+		charge = fee(in.Stake)
 	}
-	exposure := in.Stake * r.Rules.MaxPayout()
-	if house.Available < exposure {
-		return empty, bad("运营方可用承付积分不足，本笔未受理，也不会收费")
+	if a.Available < in.Stake {
+		return empty, bad("可用积分不足以覆盖下注本金")
+	}
+	if !s.PlayerOnly {
+		house, e := getAccount(tx, "house")
+		if e != nil {
+			return empty, e
+		}
+		exposure := int64(math.Ceil(float64(in.Stake) * r.Rules.MaxPayout()))
+		if house.Available < exposure {
+			return empty, bad("运营方可用承付积分不足，本笔未受理，也不会收费")
+		}
 	}
 	b := Bet{ID: newID(), RoundID: r.ID, AccountID: a.ID, Position: in.Position, Stake: in.Stake, Fee: charge, State: "RESERVED", CreatedAt: now()}
 	if _, e = tx.Exec("INSERT INTO bets(id,round_id,account_id,position,stake,fee,state,created_at) VALUES(?,?,?,?,?,?,'RESERVED',?)", b.ID, r.ID, a.ID, in.Position, in.Stake, charge, b.CreatedAt); e != nil {
 		return empty, e
 	}
 	reserve := in.Stake
-	if r.Rules.FeeTiming == "settlement" {
+	if !s.PlayerOnly && r.Rules.FeeTiming == "settlement" {
 		reserve += charge
-	} else {
+	} else if !s.PlayerOnly {
 		if e = transfer(tx, a.ID, r.Rules.FeeRecipient, charge, "FEE", "fee:"+b.ID, r.ID, b.ID, "逐笔受理费用"); e != nil {
 			return empty, e
 		}
@@ -231,14 +255,19 @@ func (s *Service) PlaceBet(tx *sqlite.Tx, in BetInput) (Bet, error) {
 	if e = lock(tx, a.ID, reserve); e != nil {
 		return empty, e
 	}
-	if e = lock(tx, "house", exposure); e != nil {
-		return empty, e
+	if !s.PlayerOnly {
+		if e = lock(tx, "house", int64(math.Ceil(float64(in.Stake)*r.Rules.MaxPayout()))); e != nil {
+			return empty, e
+		}
 	}
 	if _, e = tx.Exec("UPDATE rounds SET revision=revision+1 WHERE id=?", r.ID); e != nil {
 		return empty, e
 	}
 	if s.Config.GroupID != 0 {
-		text := fmt.Sprintf("注单已受理\n%s期\n玩家ID：%d\n%d号 %s｜本金%d｜费用%d\n注单：%s", r.Number, a.TelegramID, b.Position, r.Heroes[b.Position-1].Name, b.Stake, b.Fee, b.ID)
+		text := fmt.Sprintf("注单已受理\n%s期\n玩家ID：%d\n%d号 %s｜本金%d\n注单：%s", r.Number, a.TelegramID, b.Position, r.Heroes[b.Position-1].Name, b.Stake, b.ID)
+		if !s.PlayerOnly {
+			text = fmt.Sprintf("注单已受理\n%s期\n玩家ID：%d\n%d号 %s｜本金%d｜费用%d\n注单：%s", r.Number, a.TelegramID, b.Position, r.Heroes[b.Position-1].Name, b.Stake, b.Fee, b.ID)
+		}
 		if e = s.queue(tx, "bet:"+b.ID, s.Config.GroupID, "", text, false); e != nil {
 			return empty, e
 		}
@@ -298,15 +327,18 @@ func makePreview(tx *sqlite.Tx, r Round, in SettleInput) (Preview, error) {
 		}
 		pos := p.Positions[b.Position-1]
 		line := Line{BetID: b.ID, AccountID: b.AccountID, Position: b.Position, Stake: b.Stake, Fee: b.Fee, Outcome: pos.Outcome}
+		if sPlayerOnly(tx) {
+			line.Fee = 0
+		}
 		switch pos.Outcome {
 		case "WIN":
 			line.Multiplier = r.Rules.Payout[pos.Hand.Rank]
-			line.GameDelta = b.Stake * line.Multiplier
+			line.GameDelta = int64(math.Round(float64(b.Stake) * line.Multiplier))
 		case "LOSS":
 			line.Multiplier = 1
 			line.GameDelta = -b.Stake
 		case "VOID":
-			if r.Rules.VoidFee == "refund" {
+			if r.Rules.VoidFee == "refund" || line.Fee != b.Fee {
 				line.Fee = 0
 			}
 		default:
@@ -323,6 +355,13 @@ func makePreview(tx *sqlite.Tx, r Round, in SettleInput) (Preview, error) {
 		Rules  Rules
 	}{p, r.Rules})
 	return p, nil
+}
+
+// sPlayerOnly is encoded in the round snapshot for previews created by the
+// player-only service; legacy snapshots continue to use the old policy.
+func sPlayerOnly(tx *sqlite.Tx) bool {
+	row, _ := tx.One("SELECT value FROM meta WHERE key='balance_mode'")
+	return row != nil && row["value"] == "player_only"
 }
 func (s *Service) Preview(id string, in SettleInput) (Preview, error) {
 	var out Preview
@@ -366,14 +405,16 @@ func (s *Service) Settle(tx *sqlite.Tx, id string, in SettleInput) (any, error) 
 	// Release reservations, apply transfers, save results and enqueue notices in ONE transaction.
 	for _, b := range bets {
 		reserve := b.Stake
-		if r.Rules.FeeTiming == "settlement" {
+		if !s.PlayerOnly && r.Rules.FeeTiming == "settlement" {
 			reserve += b.Fee
 		}
 		if e = lock(tx, b.AccountID, -reserve); e != nil {
 			return nil, e
 		}
-		if e = lock(tx, "house", -b.Stake*r.Rules.MaxPayout()); e != nil {
-			return nil, e
+		if !s.PlayerOnly {
+			if e = lock(tx, "house", -int64(math.Ceil(float64(b.Stake)*r.Rules.MaxPayout()))); e != nil {
+				return nil, e
+			}
 		}
 		if r.Rules.FeeTiming == "acceptance" && r.Rules.VoidFee == "refund" {
 			if e = lock(tx, r.Rules.FeeRecipient, -b.Fee); e != nil {
@@ -383,19 +424,22 @@ func (s *Service) Settle(tx *sqlite.Tx, id string, in SettleInput) (any, error) 
 	}
 	for i, b := range bets {
 		l := p.Lines[i]
-		if l.GameDelta > 0 {
+		if l.GameDelta > 0 && !s.PlayerOnly {
 			e = transfer(tx, "house", b.AccountID, l.GameDelta, "GAME", "game:"+b.ID, r.ID, b.ID, "闲家按自身牛型净盈利")
 		}
-		if l.GameDelta < 0 {
+		if l.GameDelta < 0 && !s.PlayerOnly {
 			e = transfer(tx, b.AccountID, "house", -l.GameDelta, "GAME", "game:"+b.ID, r.ID, b.ID, "闲家固定一倍本金亏损")
+		}
+		if s.PlayerOnly {
+			e = playerGameDelta(tx, b.AccountID, l.GameDelta, "game:"+b.ID, r.ID, b.ID)
 		}
 		if e != nil {
 			return nil, e
 		}
-		if r.Rules.FeeTiming == "settlement" && l.Fee > 0 {
+		if !s.PlayerOnly && r.Rules.FeeTiming == "settlement" && l.Fee > 0 {
 			e = transfer(tx, b.AccountID, r.Rules.FeeRecipient, l.Fee, "FEE", "fee:"+b.ID, r.ID, b.ID, "结算收取逐笔费用")
 		}
-		if r.Rules.FeeTiming == "acceptance" && l.Fee == 0 {
+		if !s.PlayerOnly && r.Rules.FeeTiming == "acceptance" && l.Fee == 0 {
 			e = transfer(tx, r.Rules.FeeRecipient, b.AccountID, b.Fee, "FEE_REFUND", "fee-refund:"+b.ID, r.ID, b.ID, "流局退回本笔已收费用")
 		}
 		if e != nil {

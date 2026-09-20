@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"riftledger/internal/app"
 	"riftledger/internal/runtimeconfig"
@@ -28,10 +29,21 @@ var assets embed.FS
 type API struct {
 	Service   *app.Service
 	tokenHash [32]byte
+	restart   func()
 }
 
 func New(s *app.Service, token string) http.Handler {
-	a := &API{s, sha256.Sum256([]byte(token))}
+	return newAPI(s, token, nil)
+}
+
+// NewWithRestart enables the authenticated web UI to ask the process manager
+// to restart the service after runtime settings have been saved.
+func NewWithRestart(s *app.Service, token string, restart func()) http.Handler {
+	return newAPI(s, token, restart)
+}
+
+func newAPI(s *app.Service, token string, restart func()) http.Handler {
+	a := &API{Service: s, tokenHash: sha256.Sum256([]byte(token)), restart: restart}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		_, e := s.DB.Query("SELECT 1")
@@ -197,6 +209,22 @@ func (a *API) route(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		a.respond(w, s.Settings.View(), nil)
+		return
+	case "api/bot-settings/restart":
+		var in struct{}
+		if e := decode(w, r, &in); e != nil {
+			a.respond(w, nil, e)
+			return
+		}
+		if a.restart == nil {
+			a.respond(w, nil, &app.Fault{Code: 503, Message: "当前运行方式不支持网页重启，请重启服务进程"})
+			return
+		}
+		a.respond(w, map[string]any{"restarting": true}, nil)
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			a.restart()
+		}()
 		return
 	case "api/bot-settings/test", "api/bot-settings/test-group":
 		var in struct{}

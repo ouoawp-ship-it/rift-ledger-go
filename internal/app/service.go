@@ -16,10 +16,53 @@ import (
 )
 
 type Service struct {
-	DB        *sqlite.DB
-	Config    RuntimeConfig
-	Settings  *runtimeconfig.Store
-	Champions *champion.ChampionService
+	DB         *sqlite.DB
+	Config     RuntimeConfig
+	Settings   *runtimeconfig.Store
+	Champions  *champion.ChampionService
+	PlayerOnly bool
+}
+
+// EnablePlayerOnly removes empty legacy operator/fee accounts and switches
+// settlement to player-only accounting. Non-empty legacy accounts are refused
+// rather than silently deleting funds or audit history.
+func (s *Service) EnablePlayerOnly() error {
+	e := s.DB.Transaction(func(tx *sqlite.Tx) error {
+		rows, e := tx.Query("SELECT id,balance,locked FROM accounts WHERE id IN ('house','fees')")
+		if e != nil {
+			return e
+		}
+		for _, r := range rows {
+			if r.Int("balance") != 0 || r.Int("locked") != 0 {
+				return conflict("旧运营方或费用账户仍有余额，请先完成迁移后再启用玩家模式")
+			}
+		}
+		refs, e := tx.One("SELECT COUNT(*) AS n FROM entries WHERE account_id IN ('house','fees')")
+		if e != nil {
+			return e
+		}
+		if refs.Int("n") > 0 {
+			return conflict("旧运营方或费用账户已有历史流水，不能无损删除")
+		}
+		_, e = tx.Exec("DELETE FROM accounts WHERE id IN ('house','fees')")
+		if e == nil {
+			_, e = tx.Exec("INSERT INTO meta(key,value) VALUES('balance_mode','player_only') ON CONFLICT(key) DO UPDATE SET value='player_only'")
+			if e == nil {
+				r, v, ge := getRules(tx)
+				if ge != nil {
+					return ge
+				}
+				r.Confirmed = true
+				_, e = tx.Exec("UPDATE settings SET version=?,rules=? WHERE id=1", v, asJSON(r))
+			}
+		}
+		return e
+	})
+	if e != nil {
+		return e
+	}
+	s.PlayerOnly = true
+	return nil
 }
 
 func New(db *sqlite.DB, c RuntimeConfig) (*Service, error) {
@@ -249,6 +292,21 @@ func (s *Service) Adjust(tx *sqlite.Tx, id string, delta int64, note, operationI
 	if e != nil {
 		return nil, e
 	}
+	if s.PlayerOnly {
+		if a.Role != "player" {
+			return nil, forbidden("玩家模式只能调整玩家账户")
+		}
+		if delta < 0 && a.Balance+delta < 0 {
+			return nil, conflict("玩家余额不足")
+		}
+		if _, e = tx.Exec("UPDATE accounts SET balance=balance+? WHERE id=?", delta, id); e != nil {
+			return nil, e
+		}
+		if _, e = tx.Exec("INSERT INTO entries(batch,account_id,kind,delta,balance_after,note,created_at) VALUES(?,?,?,?,?,?,?)", "adjust:"+operationID, id, "ADJUST", delta, a.Balance+delta, note, now()); e != nil {
+			return nil, e
+		}
+		return getAccount(tx, id)
+	}
 	if delta < 0 && a.Role == "player" {
 		row, e := tx.One(`SELECT COALESCE(SUM(stake),0) AS stakes,COALESCE(SUM(CASE WHEN json_extract(r.rules,'$.fee_timing')='acceptance' THEN b.fee ELSE 0 END),0) AS paid FROM bets b JOIN rounds r ON b.round_id=r.id WHERE b.account_id=? AND b.state='RESERVED'`, id)
 		if e != nil {
@@ -341,6 +399,9 @@ func (s *Service) History(limit, offset int) ([]Round, error) {
 func (s *Service) Rows(kind, id string, limit, offset int) (any, error) {
 	switch kind {
 	case "accounts":
+		if s.PlayerOnly {
+			return s.PlayerSummary(limit, offset)
+		}
 		rows, e := s.DB.Query("SELECT a.*,u.username,u.first_name,u.last_name,u.first_contact,u.last_contact FROM accounts a LEFT JOIN telegram_users u ON u.telegram_user_id=a.telegram_id WHERE role!='external' ORDER BY created_at DESC,id LIMIT ? OFFSET ?", limit, offset)
 		a := []Account{}
 		for _, r := range rows {
@@ -365,4 +426,38 @@ func (s *Service) Rows(kind, id string, limit, offset int) (any, error) {
 		return out, e
 	}
 	return nil, notfound(fmt.Sprintf("未知查询 %s", kind))
+}
+
+func (s *Service) PlayerSummary(limit, offset int) (any, error) {
+	var out any
+	e := s.DB.Read(func(tx *sqlite.Tx) error {
+		active, e := activeRound(tx)
+		if e != nil {
+			return e
+		}
+		rows, e := tx.Query(`SELECT a.id,a.telegram_id,a.name,a.balance,a.locked,a.enabled,COALESCE(u.username,'') AS username,COALESCE(u.first_name,'') AS first_name,COALESCE(u.last_name,'') AS last_name,COALESCE((SELECT SUM(b.stake) FROM bets b WHERE b.account_id=a.id AND b.round_id=? AND b.state='RESERVED'),0) AS round_stake,COALESCE((SELECT group_concat(CAST(b.position AS TEXT)||':'||json_extract(r.heroes,'$['||(b.position-1)||'].name'),'、') FROM bets b JOIN rounds r ON r.id=b.round_id WHERE b.account_id=a.id AND b.round_id=? AND b.state='RESERVED'),'') AS round_content,COALESCE((SELECT SUM(b.game_delta) FROM bets b JOIN rounds r ON r.id=b.round_id WHERE b.account_id=a.id AND r.state IN ('SETTLED','VOID') AND b.settled_at=(SELECT MAX(b2.settled_at) FROM bets b2 JOIN rounds r2 ON r2.id=b2.round_id WHERE b2.account_id=a.id AND r2.state IN ('SETTLED','VOID'))),0) AS last_profit FROM accounts a LEFT JOIN telegram_users u ON u.telegram_user_id=a.telegram_id WHERE a.role='player' ORDER BY a.created_at DESC LIMIT ? OFFSET ?`, func() string {
+			if active != nil {
+				return active.ID
+			}
+			return ""
+		}(), func() string {
+			if active != nil {
+				return active.ID
+			}
+			return ""
+		}(), limit, offset)
+		if e != nil {
+			return e
+		}
+		zone := time.FixedZone("CST", 8*3600)
+		t := time.Now().In(zone)
+		start := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, zone).Unix()
+		stats, e := tx.One("SELECT (SELECT COUNT(*) FROM accounts WHERE role='player') AS players,(SELECT COALESCE(SUM(balance),0) FROM accounts WHERE role='player') AS balance,(SELECT COALESCE(-SUM(e.delta),0) FROM entries e JOIN accounts a ON a.id=e.account_id WHERE a.role='player' AND e.kind='GAME' AND e.created_at>=?) AS profit", start)
+		if e != nil {
+			return e
+		}
+		out = map[string]any{"rows": rows, "stats": stats}
+		return nil
+	})
+	return out, e
 }
