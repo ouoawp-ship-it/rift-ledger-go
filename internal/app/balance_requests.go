@@ -27,6 +27,9 @@ func ParseBalanceRequest(text string) (string, int64, bool) {
 }
 
 func (s *Service) requestBalance(tx *sqlite.Tx, u TGUpdate, a Account, kind string, amount int64) (string, error) {
+	if !a.Enabled {
+		return "您还没有开通积分账户，请先联系管理员。", nil
+	}
 	duplicate, e := tx.One("SELECT id FROM balance_requests WHERE account_id=? AND kind=? AND amount=? AND state='PENDING'", a.ID, kind, amount)
 	if e != nil {
 		return "", e
