@@ -43,8 +43,8 @@ func loadCJKFace() font.Face {
 	paths := []string{"/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf", "C:\\Windows\\Fonts\\NotoSansSC-VF.ttf"}
 	for _, path := range paths {
 		b, err := os.ReadFile(path); if err != nil { continue }
-		if collection, err := opentype.ParseCollection(b); err == nil && len(collection) > 0 {
-			if face, err := opentype.NewFace(collection[0], &opentype.FaceOptions{Size: 34, DPI: 72, Hinting: font.HintingFull}); err == nil { return face }
+		if collection, err := opentype.ParseCollection(b); err == nil {
+			if face, err := opentype.NewFace(collection.Font(0), &opentype.FaceOptions{Size: 34, DPI: 72, Hinting: font.HintingFull}); err == nil { return face }
 		}
 		if f, err := opentype.Parse(b); err == nil {
 			if face, err := opentype.NewFace(f, &opentype.FaceOptions{Size: 34, DPI: 72, Hinting: font.HintingFull}); err == nil { return face }
