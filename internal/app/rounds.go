@@ -522,6 +522,9 @@ func (s *Service) Settle(tx *sqlite.Tx, id string, in SettleInput) (any, error) 
 	if e != nil {
 		return nil, e
 	}
+	if e = s.queueRoundResult(tx, r); e != nil {
+		return nil, e
+	}
 	if e = s.roundCard(tx, r, "开奖完成，结果已经保存。"); e != nil {
 		return nil, e
 	}

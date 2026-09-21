@@ -112,7 +112,38 @@ func (s *Service) roundCard(tx *sqlite.Tx, r Round, heading string) error {
 	return s.queue(tx, fmt.Sprintf("round-card:%s:%s", r.ID, r.State), s.Config.GroupID, "round:"+r.ID, text, true)
 }
 
-// Queue a separate announcement so settlement is visible as a new group message.
+// Settlement results must appear as a new message, not only an edit to the
+// earlier round card. The stable key also protects replayed settlement requests.
+func (s *Service) queueRoundResult(tx *sqlite.Tx, r Round) error {
+	if s.Config.GroupID == 0 || r.Result == nil {
+		return nil
+	}
+	var text strings.Builder
+	fmt.Fprintf(&text, "峡谷账房｜%s期\n开奖结果\n", r.Number)
+	if r.Result.WholeVoid {
+		fmt.Fprintf(&text, "整期流局：%s\n", r.Result.Reason)
+	}
+	for _, p := range r.Result.Positions {
+		role := "闲家"
+		if p.Banker {
+			role = "庄家"
+		}
+		outcome := map[string]string{"WIN": "闲赢", "LOSS": "庄赢", "VOID": "流局", "BANKER": "庄家"}[p.Outcome]
+		fmt.Fprintf(&text, "\n%d号 %s【%s】\n", p.Position, p.Hero.Name, role)
+		if p.Hand.Raw != "" {
+			fmt.Fprintf(&text, "伤害 %s", p.Hand.Raw)
+			if p.Hand.Normalized != "" {
+				fmt.Fprintf(&text, " → %s", p.Hand.Normalized)
+			}
+			fmt.Fprintf(&text, "｜%s\n", p.Hand.Label)
+		}
+		fmt.Fprintf(&text, "结果：%s\n", outcome)
+	}
+	fmt.Fprintf(&text, "\n玩家本期游戏合计：%+d 积分\n本期已结算。", r.Result.PlayerGameDelta)
+	return s.queue(tx, "round-result:"+r.ID, s.Config.GroupID, "", text.String(), false)
+}
+
+// Queue a separate winners list after the round result announcement.
 // Winning profit excludes returned stake; net change includes all of a player's bets.
 func (s *Service) queueWinners(tx *sqlite.Tx, r Round) error {
 	if s.Config.GroupID == 0 || r.Result == nil {
