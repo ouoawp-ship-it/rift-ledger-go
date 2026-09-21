@@ -2,7 +2,7 @@
 
 全部 `/api/*` 均为**管理员权限**，不要把管理员密钥分发给普通玩家。玩家身份只由Telegram入站的真实From.ID确定；`POST /api/bets` 是受保护的管理/测试入口，不是公开允许传account_id冒充玩家的接口。
 
-统一返回：成功 `{"ok":true,"data":...}`，失败 `{"ok":false,"error":"中文原因"}`。HTTP状态使用400/401/403/404/409/415/500。所有JSON请求用Content-Type: application/json，数值字段必须为整数，伤害使用字符串，不接受未知字段或多对象请求。请求体上限1MiB。
+统一返回：成功 `{"ok":true,"data":...}`，失败 `{"ok":false,"error":"中文原因"}`。HTTP状态使用400/401/403/404/409/415/500。所有JSON请求用Content-Type: application/json。金额单位为积分，支持最多三位小数，可传 JSON 数字或十进制字符串（如 `"1000.199"`）；超过三位小数、科学计数法和超限金额会被拒绝。ID、位置等仍为整数，伤害使用字符串，不接受未知字段或多对象请求。请求体上限1MiB。
 
 ```bash
 # 从可信.env加载密钥；不要写死在共享脚本里
@@ -40,12 +40,12 @@ curl -sS http://127.0.0.1:8080/api/calculate \
 | POST /api/calculate | damage、可选banker_damage字符串 |
 | POST /api/rules | expected_version与rules完整对象 |
 | POST /api/accounts | telegram_id整数、name、enabled |
-| POST /api/adjustments | account_id、delta非零整数、note必填 |
+| POST /api/adjustments | account_id、delta非零积分金额（最多三位小数）、note必填 |
 | POST /api/rounds | number、banker、heroes；允许banker0和heroes[]创建空草稿 |
 | POST /api/rounds/{id}/configure | number、banker1..5、heroes五项{id,name} |
 | POST /api/rounds/{id}/open | 空对象{}；必须先确认规则与英雄 |
 | POST /api/rounds/{id}/close | 空对象{} |
-| POST /api/bets | account_id、round_id、position1..5非庄位、stake整数 |
+| POST /api/bets | account_id、round_id、position1..5非庄位、stake正数积分金额（最多三位小数） |
 | POST /api/rounds/{id}/preview | damages五个字符串（旧客户端可继续携带duration_seconds，但网页不再使用） |
 | POST /api/rounds/{id}/settle | 上述输入 + preview_token |
 | POST /api/outbox/{id}/resolve | action=retry/ack/skip；ack卡片需真实message_id |

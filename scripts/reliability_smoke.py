@@ -63,13 +63,13 @@ def main():
                 rules = state["rules"] | {"payout":[1.2]*11, "confirmed":True}
                 api("rules", {"expected_version":state["rules_version"], "rules":rules})
                 player = api("accounts", {"telegram_id":123456789, "name":"isolated player", "enabled":True})
-                credit = {"account_id":player["id"], "delta":1000, "note":"isolated acceptance"}
+                credit = {"account_id":player["id"], "delta":"1000.199", "note":"isolated acceptance"}
                 first = api("adjustments", credit, "test-credit-replay")
                 assert first == api("adjustments", credit, "test-credit-replay")
                 r = api("rounds", {"number":"2026-09-21-0001", "banker":1, "heroes":heroes})
                 path = "rounds/" + r["id"]
                 api(path + "/open", {})
-                api("bets", {"account_id":player["id"], "round_id":r["id"], "position":2, "stake":100})
+                api("bets", {"account_id":player["id"], "round_id":r["id"], "position":2, "stake":"100.001"})
                 api(path + "/close", {})
                 settle = {"duration_seconds":1200, "damages":["12710", "12745", "99999", "12737", "12345"]}
                 preview = api(path + "/preview", settle)
@@ -77,9 +77,14 @@ def main():
                 result = api(path + "/settle", settle, "test-settlement-replay")
                 assert result == api(path + "/settle", settle, "test-settlement-replay")
                 account = next(a for a in api("state")["accounts"] if a["id"] == player["id"])
-                assert account["balance"] == 1120 and account["locked"] == 0, account
+                assert result["lines"][0]["game_delta"] == 120.001, result
+                assert account["balance"] == 1120.200 and account["locked"] == 0, account
+                rows = api("accounts")["rows"]
+                assert rows[0]["balance"] == "1120.200", rows
+                entries = api("entries?account_id=" + player["id"])
+                assert entries[0]["delta"] == "120.001" and entries[0]["balance_after"] == "1120.200", entries
                 assert api("reconcile")["balanced"]
-                checks.append("player-only create/open/bet/close/settle, duplicate credit and settlement, balance 1120, reconciliation")
+                checks.append("fractional credit 1000.199 + bet 100.001 × 1.2 = balance 1120.200; duplicate credit/settlement, summary, ledger and reconciliation")
                 with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
                     assert all(pool.map(lambda _:bool(api("state")), range(32)))
                 checks.append("32 HTTP reads with 8 concurrent clients returned complete JSON and request IDs")
@@ -95,7 +100,7 @@ def main():
                 time.sleep(.3)
                 assert proc.poll() is None, "replayed save restarted unchanged configuration"
                 account = next(a for a in api("state")["accounts"] if a["id"] == player["id"])
-                assert account["balance"] == 1120 and api("reconcile")["balanced"]
+                assert account["balance"] == 1120.200 and api("reconcile")["balanced"]
                 checks.append("save response before graceful exit; restart persists settings and ledger; replay does not restart")
             finally:
                 if proc.poll() is None:

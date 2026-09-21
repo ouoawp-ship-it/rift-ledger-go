@@ -36,7 +36,7 @@ func TestSettlementQueuesNewRoundResult(t *testing.T) {
 			exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.OpenRound(tx, r.ID) })
 			if tc.bet {
 				exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.SetPlayer(tx, 111, "测试玩家", true) })
-				exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.Adjust(tx, "tg:111", 1000, "测试", newID()) })
+				exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.Adjust(tx, "tg:111", Points(1000), "测试", newID()) })
 				place(t, s, r, "tg:111", 2, 100)
 			}
 			exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.CloseRound(tx, r.ID) })

@@ -14,11 +14,11 @@ func update(id, uid, date int64, text string) TGUpdate {
 func TestShortcutParser(t *testing.T) {
 	for _, x := range []string{"1.100", "1 . 100U", "  5.20u  "} {
 		p, a, ok := ParseBet(x)
-		if !ok || p < 1 || a < 20 {
+		if !ok || p < 1 || a < Points(20) {
 			t.Fatal(x)
 		}
 	}
-	for _, x := range []string{"1.100.5", "0.100", "6.100", "1.-1", "1.2e3", "1.100000000", "1.20hello"} {
+	for _, x := range []string{"1.100.1234", "0.100", "6.100", "1.-1", "1.2e3", "1.100000000", "1.20hello"} {
 		if _, _, ok := ParseBet(x); ok {
 			t.Fatal(x)
 		}
@@ -33,7 +33,7 @@ func TestTelegramDuplicateUpdates(t *testing.T) {
 	if e := s.HandleUpdate(u); e != nil {
 		t.Fatal(e)
 	}
-	if acc(t, s, "tg:111").Balance != 999 || acc(t, s, "tg:111").Locked != 100 {
+	if acc(t, s, "tg:111").Balance != Points(999) || acc(t, s, "tg:111").Locked != Points(100) {
 		t.Fatal("duplicate debit")
 	}
 	rows, _ := s.DB.Query("SELECT * FROM bets")
@@ -52,12 +52,16 @@ func TestTelegramDuplicateUpdates(t *testing.T) {
 }
 func TestRejectedTelegramUpdateNeverBecomesNewBet(t *testing.T) {
 	s, r := fixture(t, "acceptance", "refund", "fees")
-	exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.Adjust(tx, "house", -100000, "暂停承付", newID()) })
+	exec(t, s, func(tx *sqlite.Tx) (any, error) {
+		return s.Adjust(tx, "house", Points(-100000), "暂停承付", newID())
+	})
 	u := update(101, 111, r.OpenedAt+1, "2.100")
 	if e := s.HandleUpdate(u); e != nil {
 		t.Fatal(e)
 	}
-	exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.Adjust(tx, "house", 100000, "恢复承付", newID()) })
+	exec(t, s, func(tx *sqlite.Tx) (any, error) {
+		return s.Adjust(tx, "house", Points(100000), "恢复承付", newID())
+	})
 	if e := s.HandleUpdate(u); e != nil {
 		t.Fatal(e)
 	}
@@ -65,7 +69,7 @@ func TestRejectedTelegramUpdateNeverBecomesNewBet(t *testing.T) {
 	if len(rows) != 0 {
 		t.Fatal("previously rejected update accepted after replay")
 	}
-	if acc(t, s, "tg:111").Balance != 1000 {
+	if acc(t, s, "tg:111").Balance != Points(1000) {
 		t.Fatal("fee charged")
 	}
 	balanced(t, s)
@@ -202,7 +206,7 @@ func TestDisabledAccountStillSettles(t *testing.T) {
 	place(t, s, r, "tg:111", 2, 100)
 	exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.SetPlayer(tx, 111, "停用玩家", false) })
 	finish(t, s, r, 301, damages("12710", "12745"))
-	if acc(t, s, "tg:111").Balance != 1299 {
+	if acc(t, s, "tg:111").Balance != Points(1299) {
 		t.Fatal("disabled account lost accepted payout")
 	}
 	balanced(t, s)

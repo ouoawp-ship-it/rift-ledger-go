@@ -4,18 +4,17 @@ import (
 	"fmt"
 	"regexp"
 	"riftledger/internal/sqlite"
-	"strconv"
 	"strings"
 )
 
-var balancePattern = regexp.MustCompile(`^(上分|下分|上|下|回)\s*\+?([0-9]{1,13})$`)
+var balancePattern = regexp.MustCompile(`^(上分|下分|上|下|回)\s*\+?([0-9]{1,13}(?:\.[0-9]{1,3})?)$`)
 
-func ParseBalanceRequest(text string) (string, int64, bool) {
+func ParseBalanceRequest(text string) (string, Money, bool) {
 	m := balancePattern.FindStringSubmatch(strings.TrimSpace(text))
 	if m == nil {
 		return "", 0, false
 	}
-	amount, e := strconv.ParseInt(m[2], 10, 64)
+	amount, e := ParseMoney(m[2])
 	if e != nil || amount <= 0 || amount > MoneyLimit {
 		return "", 0, false
 	}
@@ -26,7 +25,7 @@ func ParseBalanceRequest(text string) (string, int64, bool) {
 	return kind, amount, true
 }
 
-func (s *Service) requestBalance(tx *sqlite.Tx, u TGUpdate, a Account, kind string, amount int64) (string, error) {
+func (s *Service) requestBalance(tx *sqlite.Tx, u TGUpdate, a Account, kind string, amount Money) (string, error) {
 	if !a.Enabled && kind == "DEBIT" {
 		return "您还没有开通积分账户，请先联系管理员。", nil
 	}
@@ -66,6 +65,7 @@ func (s *Service) BalanceRequests(limit, offset int) (any, error) {
 			return e
 		}
 		counts, e := tx.One(`SELECT COALESCE(SUM(kind='CREDIT'),0) AS credit,COALESCE(SUM(kind='DEBIT'),0) AS debit,COALESCE(MAX(id),0) AS latest FROM balance_requests WHERE state='PENDING'`)
+		rows, _ = displayMoneyRows(rows, nil, "amount", "balance_at_request", "current_balance")
 		result = map[string]any{"rows": rows, "counts": counts}
 		return e
 	})
@@ -90,7 +90,7 @@ func (s *Service) ResolveBalanceRequest(tx *sqlite.Tx, id int64, action, note st
 		return nil, conflict("申请已处理，不能重复审批")
 	}
 	if action == "APPROVED" {
-		delta := r.Int("amount")
+		delta := moneyRow(r, "amount")
 		if r["kind"] == "DEBIT" {
 			delta = -delta
 		}
@@ -114,7 +114,7 @@ func (s *Service) ResolveBalanceRequest(tx *sqlite.Tx, id int64, action, note st
 	if action == "REJECTED" {
 		label = "已拒绝"
 	}
-	if e = s.queue(tx, fmt.Sprintf("balance-result:%d", id), a.TelegramID, "", fmt.Sprintf("积分申请 #%d %s\n金额：%d\n当前余额：%d\n备注：%s", id, label, r.Int("amount"), a.Balance, note), false); e != nil {
+	if e = s.queue(tx, fmt.Sprintf("balance-result:%d", id), a.TelegramID, "", fmt.Sprintf("积分申请 #%d %s\n金额：%d\n当前余额：%d\n备注：%s", id, label, moneyRow(r, "amount"), a.Balance, note), false); e != nil {
 		return nil, e
 	}
 	return map[string]any{"id": id, "state": action}, nil

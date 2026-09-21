@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -11,10 +10,13 @@ import (
 	"riftledger/pkg/bull"
 )
 
-func playerGameDelta(tx *sqlite.Tx, accountID string, delta int64, batch, roundID, betID string) error {
+func playerGameDelta(tx *sqlite.Tx, accountID string, delta Money, batch, roundID, betID string) error {
 	a, e := getAccount(tx, accountID)
 	if e != nil {
 		return e
+	}
+	if a.Balance+delta > MoneyLimit {
+		return bad("玩家余额超出安全范围")
 	}
 	if delta < 0 && a.Balance+delta < 0 {
 		return conflict("玩家余额不足以承担本期亏损")
@@ -202,9 +204,9 @@ func (s *Service) PlaceBet(tx *sqlite.Tx, in BetInput) (Bet, error) {
 	}
 	riskBalance := a.Balance
 	if !s.PlayerOnly && r.Rules.FeeTiming == "acceptance" {
-		riskBalance += sums.Int("fees")
+		riskBalance += moneyRow(sums, "fees")
 	}
-	if sums.Int("stakes")+in.Stake > riskBalance/4 {
+	if moneyRow(sums, "stakes")+in.Stake > riskBalance/4 {
 		return empty, bad("本期累计下注不能超过账面余额的四分之一；不会把冻结后可用额重复除以四")
 	}
 	count, e := tx.One("SELECT COUNT(*) AS n FROM bets WHERE round_id=?", r.ID)
@@ -214,7 +216,7 @@ func (s *Service) PlaceBet(tx *sqlite.Tx, in BetInput) (Bet, error) {
 	if count.Int("n") >= MaxBetsPerRound {
 		return empty, bad("本期已达到10000笔安全上限")
 	}
-	charge := int64(0)
+	charge := Money(0)
 	if !s.PlayerOnly {
 		charge = fee(in.Stake)
 	}
@@ -229,7 +231,7 @@ func (s *Service) PlaceBet(tx *sqlite.Tx, in BetInput) (Bet, error) {
 		if e != nil {
 			return empty, e
 		}
-		exposure := int64(math.Ceil(float64(in.Stake) * r.Rules.MaxPayout()))
+		exposure := exposureFor(in.Stake, r.Rules.MaxPayout())
 		if house.Available < exposure {
 			return empty, bad("运营方可用承付积分不足，本笔未受理，也不会收费")
 		}
@@ -256,7 +258,7 @@ func (s *Service) PlaceBet(tx *sqlite.Tx, in BetInput) (Bet, error) {
 		return empty, e
 	}
 	if !s.PlayerOnly {
-		if e = lock(tx, "house", int64(math.Ceil(float64(in.Stake)*r.Rules.MaxPayout()))); e != nil {
+		if e = lock(tx, "house", exposureFor(in.Stake, r.Rules.MaxPayout())); e != nil {
 			return empty, e
 		}
 	}
@@ -339,7 +341,7 @@ func makePreview(tx *sqlite.Tx, r Round, in SettleInput) (Preview, error) {
 		switch pos.Outcome {
 		case "WIN":
 			line.Multiplier = r.Rules.Payout[pos.Hand.Rank]
-			line.GameDelta = int64(math.Round(float64(b.Stake) * line.Multiplier))
+			line.GameDelta = profitFor(b.Stake, line.Multiplier)
 		case "LOSS":
 			line.Multiplier = 1
 			line.GameDelta = -b.Stake
@@ -451,7 +453,7 @@ func (s *Service) Settle(tx *sqlite.Tx, id string, in SettleInput) (any, error) 
 			return nil, e
 		}
 		if !s.PlayerOnly {
-			if e = lock(tx, "house", -int64(math.Ceil(float64(b.Stake)*r.Rules.MaxPayout()))); e != nil {
+			if e = lock(tx, "house", -exposureFor(b.Stake, r.Rules.MaxPayout())); e != nil {
 				return nil, e
 			}
 		}
@@ -537,7 +539,7 @@ func (s *Service) Settle(tx *sqlite.Tx, id string, in SettleInput) (any, error) 
 		}
 	}
 	// One personal settlement summary per participant, not one message per bet.
-	totals := map[string][3]int64{}
+	totals := map[string][3]Money{}
 	for _, l := range p.Lines {
 		t := totals[l.AccountID]
 		t[0] += l.GameDelta
@@ -553,7 +555,7 @@ func (s *Service) Settle(tx *sqlite.Tx, id string, in SettleInput) (any, error) 
 		if a.TelegramID == 0 {
 			continue
 		}
-		msg := fmt.Sprintf("%s期结算\n注单%d笔｜游戏变化%+d｜费用%d\n本期净变化%+d\n当前余额%d｜可用%d", r.Number, t[2], t[0], t[1], t[0]-t[1], a.Balance, a.Available)
+		msg := fmt.Sprintf("%s期结算\n注单%d笔｜游戏变化%+d｜费用%d\n本期净变化%+d\n当前余额%d｜可用%d", r.Number, int64(t[2]), t[0], t[1], t[0]-t[1], a.Balance, a.Available)
 		if e = s.queue(tx, "settle:"+r.ID+":"+id, a.TelegramID, "", msg, false); e != nil {
 			return nil, e
 		}

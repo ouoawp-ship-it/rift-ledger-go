@@ -40,7 +40,7 @@ func (s *Service) EnablePlayerOnly() error {
 			return e
 		}
 		for _, r := range rows {
-			if r.Int("balance") != 0 || r.Int("locked") != 0 {
+			if moneyRow(r, "balance") != 0 || moneyRow(r, "locked") != 0 {
 				return conflict("旧运营方或费用账户仍有余额，请先完成迁移后再启用玩家模式")
 			}
 			refs, ee := tx.One("SELECT COUNT(*) AS n FROM entries WHERE account_id=?", r["id"])
@@ -151,7 +151,7 @@ func (s *Service) SaveRules(tx *sqlite.Tx, expected int64, r Rules) (any, error)
 	return map[string]any{"version": v + 1, "rules": r}, nil
 }
 func account(row sqlite.Row) Account {
-	return Account{Username: row["username"], FirstName: row["first_name"], LastName: row["last_name"], FirstContact: row.Int("first_contact"), LastContact: row.Int("last_contact"), ID: row["id"], Name: row["name"], Role: row["role"], TelegramID: row.Int("telegram_id"), Enabled: row.Int("enabled") == 1, Balance: row.Int("balance"), Locked: row.Int("locked"), Available: row.Int("balance") - row.Int("locked"), CreatedAt: row.Int("created_at")}
+	return Account{Username: row["username"], FirstName: row["first_name"], LastName: row["last_name"], FirstContact: row.Int("first_contact"), LastContact: row.Int("last_contact"), ID: row["id"], Name: row["name"], Role: row["role"], TelegramID: row.Int("telegram_id"), Enabled: row.Int("enabled") == 1, Balance: moneyRow(row, "balance"), Locked: moneyRow(row, "locked"), Available: moneyRow(row, "balance") - moneyRow(row, "locked"), CreatedAt: row.Int("created_at")}
 }
 func getAccount(tx *sqlite.Tx, id string) (Account, error) {
 	row, e := tx.One("SELECT * FROM accounts WHERE id=?", id)
@@ -210,7 +210,7 @@ func betsFor(tx *sqlite.Tx, roundID string) ([]Bet, error) {
 	return out, nil
 }
 func betFrom(row sqlite.Row) Bet {
-	return Bet{ID: row["id"], RoundID: row["round_id"], AccountID: row["account_id"], Position: int(row.Int("position")), Stake: row.Int("stake"), Fee: row.Int("fee"), State: row["state"], GameDelta: row.Int("game_delta"), NetDelta: row.Int("net_delta"), CreatedAt: row.Int("created_at"), SettledAt: row.Int("settled_at")}
+	return Bet{ID: row["id"], RoundID: row["round_id"], AccountID: row["account_id"], Position: int(row.Int("position")), Stake: moneyRow(row, "stake"), Fee: moneyRow(row, "fee"), State: row["state"], GameDelta: moneyRow(row, "game_delta"), NetDelta: moneyRow(row, "net_delta"), CreatedAt: row.Int("created_at"), SettledAt: row.Int("settled_at")}
 }
 
 func (s *Service) SetPlayer(tx *sqlite.Tx, tgid int64, name string, enabled bool) (any, error) {
@@ -231,7 +231,7 @@ func (s *Service) SetPlayer(tx *sqlite.Tx, tgid int64, name string, enabled bool
 // transfer creates a balanced, immutable pair. Every balance change must pass
 // here, including administrator adjustments; external is a clearing account,
 // NOT spendable house bankroll. Frozen balances cannot be spent.
-func transfer(tx *sqlite.Tx, from, to string, amount int64, kind, batch, roundID, betID, note string) error {
+func transfer(tx *sqlite.Tx, from, to string, amount Money, kind, batch, roundID, betID, note string) error {
 	if amount == 0 {
 		return nil
 	}
@@ -257,7 +257,7 @@ func transfer(tx *sqlite.Tx, from, to string, amount int64, kind, batch, roundID
 	}
 	for _, v := range []struct {
 		a     Account
-		delta int64
+		delta Money
 	}{{a, -amount}, {b, amount}} {
 		if _, e = tx.Exec("UPDATE accounts SET balance=balance+? WHERE id=?", v.delta, v.a.ID); e != nil {
 			return e
@@ -268,7 +268,7 @@ func transfer(tx *sqlite.Tx, from, to string, amount int64, kind, batch, roundID
 	}
 	return nil
 }
-func lock(tx *sqlite.Tx, id string, delta int64) error {
+func lock(tx *sqlite.Tx, id string, delta Money) error {
 	a, e := getAccount(tx, id)
 	if e != nil {
 		return e
@@ -279,7 +279,7 @@ func lock(tx *sqlite.Tx, id string, delta int64) error {
 	_, e = tx.Exec("UPDATE accounts SET locked=locked+? WHERE id=?", delta, id)
 	return e
 }
-func (s *Service) Adjust(tx *sqlite.Tx, id string, delta int64, note, operationID string) (any, error) {
+func (s *Service) Adjust(tx *sqlite.Tx, id string, delta Money, note, operationID string) (any, error) {
 	note = strings.TrimSpace(note)
 	if id == "external" {
 		return nil, forbidden("对手账户不能手动操作")
@@ -288,7 +288,7 @@ func (s *Service) Adjust(tx *sqlite.Tx, id string, delta int64, note, operationI
 		return nil, bad("调分必须填写1至200字备注")
 	}
 	if delta == 0 || delta > MoneyLimit || delta < -MoneyLimit {
-		return nil, bad("调分金额必须是非零安全整数")
+		return nil, bad("调分金额必须非零、最多三位小数且在安全范围内")
 	}
 	a, e := getAccount(tx, id)
 	if e != nil {
@@ -298,8 +298,11 @@ func (s *Service) Adjust(tx *sqlite.Tx, id string, delta int64, note, operationI
 		if a.Role != "player" {
 			return nil, forbidden("玩家模式只能调整玩家账户")
 		}
-		if delta < 0 && a.Balance+delta < 0 {
-			return nil, conflict("玩家余额不足")
+		if a.Balance+delta > MoneyLimit {
+			return nil, bad("玩家余额超出安全范围")
+		}
+		if delta < 0 && a.Balance+delta < a.Locked {
+			return nil, conflict("玩家可用余额不足，已冻结的下注金额不能下分")
 		}
 		if _, e = tx.Exec("UPDATE accounts SET balance=balance+? WHERE id=?", delta, id); e != nil {
 			return nil, e
@@ -314,7 +317,7 @@ func (s *Service) Adjust(tx *sqlite.Tx, id string, delta int64, note, operationI
 		if e != nil {
 			return nil, e
 		}
-		if row.Int("stakes") > (a.Balance+delta+row.Int("paid"))/4 {
+		if moneyRow(row, "stakes") > (a.Balance+delta+moneyRow(row, "paid"))/4 {
 			return nil, conflict("减分后会违反本期累计下注不超过余额四分之一的限制")
 		}
 	}
@@ -416,9 +419,11 @@ func (s *Service) Rows(kind, id string, limit, offset int) (any, error) {
 		return a, e
 	case "entries":
 		if id != "" {
-			return s.DB.Query("SELECT * FROM entries WHERE account_id=? ORDER BY id DESC LIMIT ? OFFSET ?", id, limit, offset)
+			rows, err := s.DB.Query("SELECT * FROM entries WHERE account_id=? ORDER BY id DESC LIMIT ? OFFSET ?", id, limit, offset)
+			return displayMoneyRows(rows, err, "delta", "balance_after")
 		}
-		return s.DB.Query("SELECT * FROM entries ORDER BY id DESC LIMIT ? OFFSET ?", limit, offset)
+		rows, err := s.DB.Query("SELECT * FROM entries ORDER BY id DESC LIMIT ? OFFSET ?", limit, offset)
+		return displayMoneyRows(rows, err, "delta", "balance_after")
 	case "audit":
 		return s.DB.Query("SELECT * FROM audit ORDER BY id DESC LIMIT ? OFFSET ?", limit, offset)
 	case "outbox":
@@ -462,6 +467,8 @@ func (s *Service) PlayerSummary(limit, offset int) (any, error) {
 		if e != nil {
 			return e
 		}
+		displayMoneyRow(stats, "balance", "profit")
+		rows, _ = displayMoneyRows(rows, nil, "balance", "locked", "round_stake", "last_profit")
 		out = map[string]any{"rows": rows, "stats": stats}
 		return nil
 	})

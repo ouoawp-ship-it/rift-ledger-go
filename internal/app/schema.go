@@ -39,7 +39,7 @@ func initialize(db *sqlite.DB) error {
 		if e != nil {
 			return e
 		}
-		if v != nil && v["value"] != "1" && v["value"] != "2" {
+		if v != nil && v["value"] != "1" && v["value"] != "2" && v["value"] != "3" {
 			return fmt.Errorf("数据库版本不匹配，拒绝自动降级")
 		}
 		if _, e = tx.Exec("INSERT OR IGNORE INTO meta(key,value) VALUES('schema_version','1')"); e != nil {
@@ -53,6 +53,11 @@ func initialize(db *sqlite.DB) error {
 			}
 			if _, e = tx.Exec("UPDATE meta SET value='2' WHERE key='schema_version'"); e != nil {
 				return e
+			}
+		}
+		if v == nil || v["value"] != "3" {
+			if e = migrateMoney(tx); e != nil {
+				return fmt.Errorf("migration 3: %w", e)
 			}
 		}
 		if _, e = tx.Exec("INSERT OR IGNORE INTO settings(id,version,rules) VALUES(1,1,?)", asJSON(DefaultRules())); e != nil {

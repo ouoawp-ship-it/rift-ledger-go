@@ -41,15 +41,15 @@ type TGUpdate struct {
 	Callback *TGCallback `json:"callback_query"`
 }
 
-var betPattern = regexp.MustCompile(`^([1-5])\s*\.\s*([0-9]{1,7})\s*[uU]?$`)
+var betPattern = regexp.MustCompile(`^([1-5])\s*\.\s*([0-9]{1,7}(?:\.[0-9]{1,3})?)\s*[uU]?$`)
 
-func ParseBet(text string) (int, int64, bool) {
+func ParseBet(text string) (int, Money, bool) {
 	m := betPattern.FindStringSubmatch(strings.TrimSpace(text))
 	if m == nil {
 		return 0, 0, false
 	}
 	p, _ := strconv.Atoi(m[1])
-	a, e := strconv.ParseInt(m[2], 10, 64)
+	a, e := ParseMoney(m[2])
 	return p, a, e == nil
 }
 func (s *Service) Offset() (int64, error) {
@@ -155,7 +155,7 @@ func (s *Service) HandleUpdate(u TGUpdate) error {
 					return e
 				}
 			} else if strings.HasPrefix(text, "上") || strings.HasPrefix(text, "下") || strings.HasPrefix(text, "回") {
-				reply = "申请金额必须为1至1000000000000的整数，不接受负数、小数或其它内容。"
+				reply = "申请金额必须为0.001至1000000000000积分，最多三位小数，不接受负数或其它内容。"
 			} else if !a.Enabled {
 				reply = fmt.Sprintf("您还没有加入战斗，或账户已停用。\n您的Telegram ID：%d\n请先提交上分申请，管理员批准后会自动开通；上分不会自动到账。", user.ID)
 				if s.Config.SupportUsername != "" {
@@ -254,7 +254,7 @@ func (s *Service) privateQuery(tx *sqlite.Tx, a Account, text string) (string, e
 		if e != nil {
 			return "", e
 		}
-		return fmt.Sprintf("个人中心\nTelegram ID：%d\n余额%d｜冻结%d｜可用%d\n最近三个北京时间自然日：\n游戏变化%+d\n人工调分不计入游戏战绩。\n登记时间：%s", a.TelegramID, a.Balance, a.Locked, a.Available, totals.Int("game"), time.Unix(a.CreatedAt, 0).In(zone).Format("2006-01-02 15:04")), nil
+		return fmt.Sprintf("个人中心\nTelegram ID：%d\n余额%d｜冻结%d｜可用%d\n最近三个北京时间自然日：\n游戏变化%+d\n人工调分不计入游戏战绩。\n登记时间：%s", a.TelegramID, a.Balance, a.Locked, a.Available, moneyRow(totals, "game"), time.Unix(a.CreatedAt, 0).In(zone).Format("2006-01-02 15:04")), nil
 	case isSupport(text):
 		if s.Config.SupportUsername != "" {
 			return "联系客服：\n@" + s.Config.SupportUsername, nil
@@ -318,7 +318,7 @@ func (s *Service) privateQuery(tx *sqlite.Tx, a Account, text string) (string, e
 		if e != nil {
 			return "", e
 		}
-		out := "快捷下注：发送 1.100 或 1 . 100U\n含义：1号英雄，本金100积分。\n只接受整数积分；仅与庄家比牛型。赢按自己的牛型倍率，输固定扣本金1倍。\n"
+		out := "快捷下注：发送 1.100 或 1 . 100U\n含义：1号英雄，本金100积分。\n金额最多三位小数，例如 1.100.199 表示1号英雄下注100.199积分；仅与庄家比牛型。赢按自己的牛型倍率，输固定扣本金1倍。\n"
 		if r == nil {
 			return out + "当前没有活动期次。", nil
 		}

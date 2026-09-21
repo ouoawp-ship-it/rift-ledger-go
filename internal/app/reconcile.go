@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"riftledger/internal/sqlite"
 )
 
@@ -11,7 +10,7 @@ func (s *Service) Reconcile() (any, error) {
 	var result any
 	e := s.DB.Read(func(tx *sqlite.Tx) error {
 		issues := []string{}
-		expected := map[string]int64{}
+		expected := map[string]Money{}
 		bets, e := tx.Query("SELECT b.*,r.rules FROM bets b JOIN rounds r ON r.id=b.round_id WHERE b.state='RESERVED'")
 		if e != nil {
 			return e
@@ -21,29 +20,29 @@ func (s *Service) Reconcile() (any, error) {
 			if e = json.Unmarshal([]byte(b["rules"]), &rules); e != nil {
 				return e
 			}
-			reserve := b.Int("stake")
+			reserve := moneyRow(b, "stake")
 			if !s.PlayerOnly && rules.FeeTiming == "settlement" {
-				reserve += b.Int("fee")
+				reserve += moneyRow(b, "fee")
 			}
 			expected[b["account_id"]] += reserve
 			if !s.PlayerOnly {
-				expected["house"] += int64(math.Ceil(float64(b.Int("stake")) * rules.MaxPayout()))
+				expected["house"] += exposureFor(moneyRow(b, "stake"), rules.MaxPayout())
 			}
 			if rules.FeeTiming == "acceptance" && rules.VoidFee == "refund" {
-				expected[rules.FeeRecipient] += b.Int("fee")
+				expected[rules.FeeRecipient] += moneyRow(b, "fee")
 			}
 		}
 		rows, e := tx.Query("SELECT a.*,COALESCE((SELECT SUM(delta) FROM entries e WHERE e.account_id=a.id),0) AS ledger_total FROM accounts a")
 		if e != nil {
 			return e
 		}
-		sum := int64(0)
+		sum := Money(0)
 		for _, r := range rows {
-			sum += r.Int("balance")
-			if r.Int("balance") != r.Int("ledger_total") {
+			sum += moneyRow(r, "balance")
+			if moneyRow(r, "balance") != moneyRow(r, "ledger_total") {
 				issues = append(issues, "余额与流水不符："+r["id"])
 			}
-			if r.Int("locked") != expected[r["id"]] {
+			if moneyRow(r, "locked") != expected[r["id"]] {
 				issues = append(issues, "冻结与待结算注单不符："+r["id"])
 			}
 		}

@@ -34,7 +34,10 @@ func TestPlayerOnlySettlementAndDecimalPayout(t *testing.T) {
 	if e = db.Transaction(func(tx *sqlite.Tx) error { _, e := s.SetPlayer(tx, 123, "测试玩家", true); return e }); e != nil {
 		t.Fatal(e)
 	}
-	if e = db.Transaction(func(tx *sqlite.Tx) error { _, e := s.Adjust(tx, "tg:123", 1000, "测试上分", newID()); return e }); e != nil {
+	if e = db.Transaction(func(tx *sqlite.Tx) error {
+		_, e := s.Adjust(tx, "tg:123", Points(1000), "测试上分", newID())
+		return e
+	}); e != nil {
 		t.Fatal(e)
 	}
 	rules := DefaultRules()
@@ -51,7 +54,7 @@ func TestPlayerOnlySettlementAndDecimalPayout(t *testing.T) {
 	if e = db.Transaction(func(tx *sqlite.Tx) error { _, e := s.OpenRound(tx, r.ID); return e }); e != nil {
 		t.Fatal(e)
 	}
-	if e = db.Transaction(func(tx *sqlite.Tx) error { _, e := s.PlaceBet(tx, BetInput{"tg:123", r.ID, 2, 33}); return e }); e != nil {
+	if e = db.Transaction(func(tx *sqlite.Tx) error { _, e := s.PlaceBet(tx, BetInput{"tg:123", r.ID, 2, Points(33)}); return e }); e != nil {
 		t.Fatal(e)
 	}
 	if e = db.Transaction(func(tx *sqlite.Tx) error { _, e := s.CloseRound(tx, r.ID); return e }); e != nil {
@@ -75,11 +78,11 @@ func TestPlayerOnlySettlementAndDecimalPayout(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if p2.Lines[0].GameDelta != 40 {
-		t.Fatalf("expected rounded 33*1.2=40, got %d", p2.Lines[0].GameDelta)
+	if p2.Lines[0].GameDelta != Money(39600) {
+		t.Fatalf("expected rounded 33*1.2=39.600, got %d", p2.Lines[0].GameDelta)
 	}
 	a := acc(t, s, "tg:123")
-	if a.Balance != 1040 || a.Locked != 0 {
+	if a.Balance != Money(1039600) || a.Locked != 0 {
 		t.Fatalf("unexpected player %+v", a)
 	}
 	if summary, e := s.PlayerSummary(50, 0); e != nil || summary == nil {

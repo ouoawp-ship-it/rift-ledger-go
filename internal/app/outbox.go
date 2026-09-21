@@ -149,7 +149,10 @@ func (s *Service) queueWinners(tx *sqlite.Tx, r Round) error {
 	if s.Config.GroupID == 0 || r.Result == nil {
 		return nil
 	}
-	type winner struct{ count, profit, net int64 }
+	type winner struct {
+		count       int64
+		profit, net Money
+	}
 	totals := map[string]winner{}
 	for _, line := range r.Result.Lines {
 		w := totals[line.AccountID]

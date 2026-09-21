@@ -179,6 +179,8 @@ func (d *DB) run(q string, args ...any) ([]Row, int64, error) {
 			rc = C.sqlite3_bind_int64(stmt, idx, C.sqlite3_int64(v))
 		case int64:
 			rc = C.sqlite3_bind_int64(stmt, idx, C.sqlite3_int64(v))
+		case interface{ SQLiteInt64() int64 }:
+			rc = C.sqlite3_bind_int64(stmt, idx, C.sqlite3_int64(v.SQLiteInt64()))
 		case bool:
 			if v {
 				rc = C.sqlite3_bind_int(stmt, idx, 1)

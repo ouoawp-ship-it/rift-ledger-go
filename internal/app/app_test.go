@@ -30,11 +30,11 @@ func fixture(t *testing.T, timing, voidFee, recipient string) (*Service, Round) 
 	for _, id := range []int64{111, 222} {
 		exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.SetPlayer(tx, id, fmt.Sprintf("玩家%d", id), true) })
 		exec(t, s, func(tx *sqlite.Tx) (any, error) {
-			return s.Adjust(tx, fmt.Sprintf("tg:%d", id), 1000, "测试初始化", newID())
+			return s.Adjust(tx, fmt.Sprintf("tg:%d", id), Points(1000), "测试初始化", newID())
 		})
 	}
 	exec(t, s, func(tx *sqlite.Tx) (any, error) {
-		return s.Adjust(tx, "house", 100000, "测试运营方积分", newID())
+		return s.Adjust(tx, "house", Points(100000), "测试运营方积分", newID())
 	})
 	in := ConfigureRound{Number: "2026-09-20-0001", Banker: 1, Heroes: heroes()}
 	obj := exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.CreateDraft(tx, in) })
@@ -73,7 +73,7 @@ func acc(t *testing.T, s *Service, id string) Account {
 }
 func place(t *testing.T, s *Service, r Round, id string, pos int, stake int64) Bet {
 	t.Helper()
-	return exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.PlaceBet(tx, BetInput{id, r.ID, pos, stake}) }).(Bet)
+	return exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.PlaceBet(tx, BetInput{id, r.ID, pos, Points(stake)}) }).(Bet)
 }
 func finish(t *testing.T, s *Service, r Round, seconds int, damage []string) Preview {
 	t.Helper()
@@ -114,13 +114,13 @@ func TestConfirmedLedgerExamples(t *testing.T) {
 			}
 			balanced(t, s)
 			finish(t, s, r, 1200, damages(c.banker, c.player))
-			if a := acc(t, s, "tg:111"); a.Balance != c.balance || a.Locked != 0 {
+			if a := acc(t, s, "tg:111"); a.Balance != Points(c.balance) || a.Locked != 0 {
 				t.Fatalf("player %+v", a)
 			}
-			if a := acc(t, s, "house"); a.Balance != c.house || a.Locked != 0 {
+			if a := acc(t, s, "house"); a.Balance != Points(c.house) || a.Locked != 0 {
 				t.Fatalf("house %+v", a)
 			}
-			if a := acc(t, s, "fees"); a.Balance != c.fees || a.Locked != 0 {
+			if a := acc(t, s, "fees"); a.Balance != Points(c.fees) || a.Locked != 0 {
 				t.Fatalf("fees %+v", a)
 			}
 			balanced(t, s)
@@ -141,7 +141,7 @@ func TestFeePoliciesAndRecipients(t *testing.T) {
 						locked = 101
 						balance = 998
 					}
-					if a.Balance != balance || a.Locked != locked {
+					if a.Balance != Points(balance) || a.Locked != Points(locked) {
 						t.Fatalf("before %+v", a)
 					}
 					balanced(t, s)
@@ -153,7 +153,7 @@ func TestFeePoliciesAndRecipients(t *testing.T) {
 					if policy == "charge" {
 						want = 998
 					}
-					if a := acc(t, s, "tg:111"); a.Balance != want || a.Locked != 0 {
+					if a := acc(t, s, "tg:111"); a.Balance != Points(want) || a.Locked != 0 {
 						t.Fatalf("after %+v", a)
 					}
 					balanced(t, s)
@@ -176,14 +176,14 @@ func TestHeroVoidAndBankerVoid(t *testing.T) {
 			if p.WholeVoid != bankerVoid {
 				t.Fatal("void scope")
 			}
-			if acc(t, s, "tg:111").Balance != 1000 {
+			if acc(t, s, "tg:111").Balance != Points(1000) {
 				t.Fatal("hero refund")
 			}
 			want := int64(1299)
 			if bankerVoid {
 				want = 1000
 			}
-			if acc(t, s, "tg:222").Balance != want {
+			if acc(t, s, "tg:222").Balance != Points(want) {
 				t.Fatal("other hero")
 			}
 			balanced(t, s)
@@ -196,23 +196,27 @@ func TestCumulativeQuarterAndSingleLossFreeze(t *testing.T) {
 	place(t, s, r, "tg:111", 2, 100)
 	place(t, s, r, "tg:111", 2, 50)
 	a := acc(t, s, "tg:111")
-	if a.Locked != 250 || a.Balance != 997 {
+	if a.Locked != Points(250) || a.Balance != Points(997) {
 		t.Fatalf("%+v", a)
 	}
-	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.PlaceBet(tx, BetInput{"tg:111", r.ID, 2, 20}) })
-	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.Adjust(tx, "tg:111", -1, "违反累计比例", newID()) })
+	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.PlaceBet(tx, BetInput{"tg:111", r.ID, 2, Points(20)}) })
+	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) {
+		return s.Adjust(tx, "tg:111", Points(-1), "违反累计比例", newID())
+	})
 	balanced(t, s)
 }
 func TestAdmissionRejectionsHaveNoFees(t *testing.T) {
 	s, r := fixture(t, "acceptance", "refund", "fees")
-	for _, input := range []BetInput{{"tg:111", r.ID, 1, 100}, {"tg:111", r.ID, 2, 19}, {"tg:111", r.ID, 2, 301}, {"house", r.ID, 2, 20}, {"tg:111", r.ID, 6, 20}} {
+	for _, input := range []BetInput{{"tg:111", r.ID, 1, Points(100)}, {"tg:111", r.ID, 2, Points(19)}, {"tg:111", r.ID, 2, Points(301)}, {"house", r.ID, 2, Points(20)}, {"tg:111", r.ID, 6, Points(20)}} {
 		expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.PlaceBet(tx, input) })
 	}
-	if acc(t, s, "tg:111").Balance != 1000 || acc(t, s, "fees").Balance != 0 {
+	if acc(t, s, "tg:111").Balance != Points(1000) || acc(t, s, "fees").Balance != 0 {
 		t.Fatal("charged rejected order")
 	}
-	exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.Adjust(tx, "house", -100000, "测试余额不足", newID()) })
-	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.PlaceBet(tx, BetInput{"tg:111", r.ID, 2, 100}) })
+	exec(t, s, func(tx *sqlite.Tx) (any, error) {
+		return s.Adjust(tx, "house", Points(-100000), "测试余额不足", newID())
+	})
+	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.PlaceBet(tx, BetInput{"tg:111", r.ID, 2, Points(100)}) })
 	balanced(t, s)
 }
 func TestImmutableRulesSnapshot(t *testing.T) {
@@ -223,7 +227,7 @@ func TestImmutableRulesSnapshot(t *testing.T) {
 	rules.Payout[9] = 8
 	exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.SaveRules(tx, 2, rules) })
 	p := finish(t, s, r, 1200, damages("12710", "12745"))
-	if p.PlayerGameDelta != 300 {
+	if p.PlayerGameDelta != Points(300) {
 		t.Fatal("old snapshot mutated")
 	}
 	next, e := s.ReadRound(p.NextRoundID)
@@ -234,7 +238,7 @@ func TestImmutableRulesSnapshot(t *testing.T) {
 }
 func TestIdempotentConcurrentBetAndPayloadConflict(t *testing.T) {
 	s, r := fixture(t, "acceptance", "refund", "fees")
-	input := BetInput{"tg:111", r.ID, 2, 100}
+	input := BetInput{"tg:111", r.ID, 2, Points(100)}
 	key := "same-order-000001"
 	var wg sync.WaitGroup
 	for i := 0; i < 20; i++ {
@@ -247,14 +251,14 @@ func TestIdempotentConcurrentBetAndPayloadConflict(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	if acc(t, s, "tg:111").Balance != 999 || acc(t, s, "tg:111").Locked != 100 {
+	if acc(t, s, "tg:111").Balance != Points(999) || acc(t, s, "tg:111").Locked != Points(100) {
 		t.Fatal("duplicate fee or reservation")
 	}
 	rows, _ := s.DB.Query("SELECT * FROM bets")
 	if len(rows) != 1 {
 		t.Fatal("duplicate bets")
 	}
-	input.Stake = 50
+	input.Stake = Points(50)
 	if _, e := s.Command(key, "bet", input, func(tx *sqlite.Tx) (any, error) { return s.PlaceBet(tx, input) }); e == nil {
 		t.Fatal("reused key accepted different payload")
 	}
@@ -273,10 +277,10 @@ func TestPreviewInvalidationAndSettlementReplay(t *testing.T) {
 	changed := in
 	changed.DurationSeconds = 1201
 	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.Settle(tx, r.ID, changed) })
-	if acc(t, s, "tg:111").Balance != 1000 {
+	if acc(t, s, "tg:111").Balance != Points(1000) {
 		t.Fatal("preview changed balance")
 	}
-	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.PlaceBet(tx, BetInput{"tg:111", r.ID, 2, 20}) })
+	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.PlaceBet(tx, BetInput{"tg:111", r.ID, 2, Points(20)}) })
 	exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.Settle(tx, r.ID, in) })
 	before, _ := s.DB.Query("SELECT * FROM entries")
 	exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.Settle(tx, r.ID, in) })
@@ -328,7 +332,7 @@ func TestLedgerImmutableAndRollback(t *testing.T) {
 		t.Fatal("ledger deletable")
 	}
 	e := s.DB.Transaction(func(tx *sqlite.Tx) error {
-		if _, e := s.PlaceBet(tx, BetInput{"tg:111", r.ID, 2, 100}); e != nil {
+		if _, e := s.PlaceBet(tx, BetInput{"tg:111", r.ID, 2, Points(100)}); e != nil {
 			return e
 		}
 		return fmt.Errorf("simulated downstream failure")
@@ -349,8 +353,8 @@ func TestSettingsValidationAndOptimisticVersion(t *testing.T) {
 	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.SaveRules(tx, 2, r) })
 	r = DefaultRules()
 	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.SaveRules(tx, 1, r) })
-	r.MinStake = 10
-	r.MaxStake = 9
+	r.MinStake = Points(10)
+	r.MaxStake = Points(9)
 	if r.Validate() == nil {
 		t.Fatal("invalid limits")
 	}
@@ -362,7 +366,7 @@ func TestDatabaseRestartPreservesSettings(t *testing.T) {
 		t.Fatal(e)
 	}
 	a := acc(t, s, "tg:111")
-	if a.Balance != 999 || a.Locked != 100 {
+	if a.Balance != Points(999) || a.Locked != Points(100) {
 		t.Fatal("restart reset data")
 	}
 	rules, e := s.CurrentRules()
@@ -389,7 +393,7 @@ func TestLowAndHighInvalidDamagePreventPartialSettlement(t *testing.T) {
 			t.Fatal("invalid damage accepted")
 		}
 	}
-	if acc(t, s, "tg:111").Balance != 1000 {
+	if acc(t, s, "tg:111").Balance != Points(1000) {
 		t.Fatal("invalid changed money")
 	}
 	balanced(t, s)
@@ -406,7 +410,7 @@ func TestAllValidBankerPositions(t *testing.T) {
 			r = obj.(Round)
 			for pos := 1; pos <= 5; pos++ {
 				if pos == n {
-					expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.PlaceBet(tx, BetInput{"tg:111", r.ID, pos, 20}) })
+					expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.PlaceBet(tx, BetInput{"tg:111", r.ID, pos, Points(20)}) })
 				} else {
 					place(t, s, r, "tg:111", pos, 20)
 				}

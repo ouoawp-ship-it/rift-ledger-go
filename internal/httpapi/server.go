@@ -402,9 +402,9 @@ func (a *API) route(w http.ResponseWriter, r *http.Request) {
 		return
 	case "api/adjustments":
 		var in struct {
-			AccountID string `json:"account_id"`
-			Delta     int64  `json:"delta"`
-			Note      string `json:"note"`
+			AccountID string    `json:"account_id"`
+			Delta     app.Money `json:"delta"`
+			Note      string    `json:"note"`
 		}
 		if e := decode(w, r, &in); e != nil {
 			a.respond(w, nil, e)

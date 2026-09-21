@@ -3,6 +3,7 @@ package httpapi
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -89,7 +90,7 @@ func TestStaticAndHealth(t *testing.T) {
 		}
 	}
 }
-func TestStrictJSONAndNoFloatingMoney(t *testing.T) {
+func TestStrictJSONAndMoneyPrecision(t *testing.T) {
 	h := server(t)
 	for _, body := range []string{`{"damage":"12745","unknown":1}`, `{"damage":"12745"} {}`, `{"damage":12745}`, `{"damage":"01234"}`} {
 		w := request(h, "POST", "/api/calculate", body, testToken, "", "")
@@ -97,9 +98,18 @@ func TestStrictJSONAndNoFloatingMoney(t *testing.T) {
 			t.Fatalf("%s -> %d", body, w.Code)
 		}
 	}
-	w := request(h, "POST", "/api/adjustments", `{"account_id":"house","delta":1.1,"note":"x"}`, testToken, "test-key-0001", "")
+	w := request(h, "POST", "/api/adjustments", `{"account_id":"house","delta":1.0001,"note":"x"}`, testToken, "test-key-0001", "")
 	if w.Code != 400 {
 		t.Fatal(w.Code)
+	}
+	for i, delta := range []string{"1000.199", `"0.001"`, "-0.001"} {
+		w = request(h, "POST", "/api/adjustments", `{"account_id":"house","delta":`+delta+`,"note":"precision"}`, testToken, fmt.Sprintf("money-key-%d", i), "")
+		if w.Code != 200 {
+			t.Fatal(w.Body.String())
+		}
+	}
+	if !strings.Contains(w.Body.String(), `"balance":1000.199`) {
+		t.Fatal(w.Body.String())
 	}
 }
 func TestDamageCompareAndMissingIdempotencyKey(t *testing.T) {

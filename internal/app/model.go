@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"regexp"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 )
 
 const Version = "0.2.0"
-const MoneyLimit int64 = 1_000_000_000_000 // exact integers, well below JS's safe integer limit
 const MaxBetsPerRound = 10000
 
 type Fault struct {
@@ -36,8 +34,8 @@ func PublicError(e error) (int, string) {
 type Rules struct {
 	Confirmed    bool      `json:"confirmed"`
 	Payout       []float64 `json:"payout"`
-	MinStake     int64     `json:"min_stake"`
-	MaxStake     int64     `json:"max_stake"`
+	MinStake     Money     `json:"min_stake"`
+	MaxStake     Money     `json:"max_stake"`
 	FeeTiming    string    `json:"fee_timing"`    // acceptance or settlement; explicit operator confirmation
 	VoidFee      string    `json:"void_fee"`      // refund or charge
 	FeeRecipient string    `json:"fee_recipient"` // fees or house
@@ -45,19 +43,19 @@ type Rules struct {
 }
 
 func DefaultRules() Rules {
-	return Rules{Confirmed: false, Payout: []float64{1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 4}, MinStake: 20, MaxStake: 300, ZeroTriple: true}
+	return Rules{Confirmed: false, Payout: []float64{1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 4}, MinStake: Points(20), MaxStake: Points(300), ZeroTriple: true}
 }
 func (r Rules) Validate() error {
 	if len(r.Payout) != 11 {
 		return bad("赔率必须包含没牛至牛牛共11项")
 	}
 	for _, v := range r.Payout {
-		if v < 0 || v > 100 || math.Round(v*100) != v*100 {
+		if _, err := payoutHundredths(v); err != nil {
 			return bad("每项赔率必须为0至100之间、最多两位小数的净盈利倍数")
 		}
 	}
-	if r.MinStake < 1 || r.MaxStake < r.MinStake || r.MaxStake > 1_000_000 {
-		return bad("下注限额必须为1至1000000之间的整数，且最低不超过最高")
+	if r.MinStake < 1 || r.MaxStake < r.MinStake || r.MaxStake > Points(1_000_000) {
+		return bad("下注限额必须为0.001至1000000积分、最多三位小数，且最低不超过最高")
 	}
 	return nil
 }
@@ -70,11 +68,11 @@ func (r Rules) MaxPayout() float64 {
 	}
 	return m
 }
-func fee(stake int64) int64 {
-	if stake <= 100 {
-		return 1
+func fee(stake Money) Money {
+	if stake <= Points(100) {
+		return Points(1)
 	}
-	return 2
+	return Points(2)
 }
 
 type Hero struct {
@@ -124,9 +122,9 @@ type Account struct {
 	Role         string `json:"role"`
 	TelegramID   int64  `json:"telegram_id"`
 	Enabled      bool   `json:"enabled"`
-	Balance      int64  `json:"balance"`
-	Locked       int64  `json:"locked"`
-	Available    int64  `json:"available"`
+	Balance      Money  `json:"balance"`
+	Locked       Money  `json:"locked"`
+	Available    Money  `json:"available"`
 	CreatedAt    int64  `json:"created_at"`
 }
 type Bet struct {
@@ -134,11 +132,11 @@ type Bet struct {
 	RoundID   string `json:"round_id"`
 	AccountID string `json:"account_id"`
 	Position  int    `json:"position"`
-	Stake     int64  `json:"stake"`
-	Fee       int64  `json:"fee"`
+	Stake     Money  `json:"stake"`
+	Fee       Money  `json:"fee"`
 	State     string `json:"state"`
-	GameDelta int64  `json:"game_delta"`
-	NetDelta  int64  `json:"net_delta"`
+	GameDelta Money  `json:"game_delta"`
+	NetDelta  Money  `json:"net_delta"`
 	CreatedAt int64  `json:"created_at"`
 	SettledAt int64  `json:"settled_at"`
 }
@@ -146,7 +144,7 @@ type BetInput struct {
 	AccountID string `json:"account_id"`
 	RoundID   string `json:"round_id"`
 	Position  int    `json:"position"`
-	Stake     int64  `json:"stake"`
+	Stake     Money  `json:"stake"`
 }
 type SettleInput struct {
 	CancelReason    string   `json:"-"`
@@ -158,11 +156,11 @@ type Line struct {
 	BetID      string  `json:"bet_id"`
 	AccountID  string  `json:"account_id"`
 	Position   int     `json:"position"`
-	Stake      int64   `json:"stake"`
-	Fee        int64   `json:"fee"`
+	Stake      Money   `json:"stake"`
+	Fee        Money   `json:"fee"`
 	Outcome    string  `json:"outcome"`
-	GameDelta  int64   `json:"game_delta"`
-	NetDelta   int64   `json:"net_delta"`
+	GameDelta  Money   `json:"game_delta"`
+	NetDelta   Money   `json:"net_delta"`
 	Multiplier float64 `json:"multiplier"`
 }
 type PositionResult struct {
@@ -183,9 +181,9 @@ type Preview struct {
 	Reason          string           `json:"reason"`
 	Positions       []PositionResult `json:"positions"`
 	Lines           []Line           `json:"lines"`
-	PlayerGameDelta int64            `json:"player_game_delta"`
-	HouseGameDelta  int64            `json:"house_game_delta"`
-	FeeTotal        int64            `json:"fee_total"`
+	PlayerGameDelta Money            `json:"player_game_delta"`
+	HouseGameDelta  Money            `json:"house_game_delta"`
+	FeeTotal        Money            `json:"fee_total"`
 	Token           string           `json:"token"`
 	NextRoundID     string           `json:"next_round_id,omitempty"`
 }
