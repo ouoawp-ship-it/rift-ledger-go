@@ -8,6 +8,8 @@ function renderBotConnection(status){
  badge.dataset.state=code;
  badge.title=status.message;
  $('bot-connection-label').textContent=botConnectionLabels[code];
+ $('bot-connection-panel').dataset.state=code;
+ $('bot-panel-label').textContent=botConnectionLabels[code].replace('机器人','');
  $('bot-connection-detail').textContent=status.message;
  $('bot-connection-time').textContent=(status.updated_at?'最近接收状态更新：'+when(status.updated_at)+' · ':'')+'每5秒自动检测';
 }

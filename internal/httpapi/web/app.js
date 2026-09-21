@@ -66,7 +66,7 @@ function renderRules(){const r=state.rules;rulesVersion=state.rules_version;
  r.payout.forEach((v,i)=>$('odd-'+i).value=v);$('min-stake').value=r.min_stake;$('max-stake').value=r.max_stake;
  $('zero-triple').value=String(r.zero_triple);
 }
-async function showTab(tab){activeTab=tab;document.querySelectorAll('.page').forEach(p=>p.hidden=p.id!=='page-'+tab);document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+async function showTab(tab){activeTab=tab;document.querySelectorAll('.page').forEach(p=>p.hidden=p.id!=='page-'+tab);document.querySelectorAll('[data-tab]').forEach(b=>{const selected=b.dataset.tab===tab;b.classList.toggle('active',selected);if(selected)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});$('current-page-name').textContent=document.querySelector('#page-'+tab+' h1')?.textContent||'管理工作台';
  if(tab==='players')await loadPlayers();if(tab==='history'){await loadHistory();await loadEntries();}if(tab==='messages')await loadMessages();if(tab==='checks')await loadAudit();
 }
 function positionTable(p){return table(['位置','英雄／身份','原始伤害','规范化数字','牛型','最大数字','对庄结果','计算说明'],p.positions.map(x=>[esc(x.position),esc(x.hero.name+(x.banker?' [庄]':'')),esc(x.hand.raw),esc(x.hand.normalized||'—'),esc(x.hand.label),esc(x.hand.max_digit),esc(states[x.outcome]),esc(x.reason+'；'+x.hand.explanation)]));}
