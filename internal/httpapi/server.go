@@ -37,7 +37,8 @@ func New(s *app.Service, token string) http.Handler {
 }
 
 // NewWithRestart enables the authenticated web UI to ask the process manager
-// to restart the service after runtime settings have been saved.
+// to restart the service after runtime settings have been saved. The settings
+// endpoint invokes this callback automatically after a successful save.
 func NewWithRestart(s *app.Service, token string, restart func()) http.Handler {
 	return newAPI(s, token, restart)
 }
@@ -213,6 +214,14 @@ func (a *API) route(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		a.respond(w, s.Settings.View(), nil)
+		if a.restart != nil {
+			go func() {
+				// Allow net/http to flush the successful response before the
+				// process manager stops this process.
+				time.Sleep(150 * time.Millisecond)
+				a.restart()
+			}()
+		}
 		return
 	case "api/bot-settings/restart":
 		var in struct{}

@@ -22,7 +22,7 @@
 
 按根目录README执行。构建指定Go1.27.1-bookworm，运行镜像为debian:bookworm-slim，并安装系统SQLite。首次需要网络；没有第三方Go module下载。Docker镜像构建与运行未在本交付环境执行，镜像tag、镜像拉取、系统包源、架构与卷权限须在目标环境验证。
 
-健康探针仅表示HTTP与数据库能响应，**不代表Telegram在线或有权限发送**。查看后台「运行检查」及容器日志中的Telegram状态。配置变更后用 `docker compose up -d` 重建/更新容器；密钥轮换不会修改数据库账目。
+健康探针仅表示HTTP与数据库能响应，**不代表Telegram在线或有权限发送**。查看后台「运行检查」及容器日志中的Telegram状态。后台保存机器人配置后服务会自动重启并应用；密钥轮换不会修改数据库账目。
 
 ## systemd（二选一，不要与Docker同时启动同一Token）
 
