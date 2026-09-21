@@ -89,13 +89,14 @@ def main():
                     assert all(pool.map(lambda _:bool(api("state")), range(32)))
                 checks.append("32 HTTP reads with 8 concurrent clients returned complete JSON and request IDs")
                 saved = api("bot-settings")
-                patch = {"token":"", "bot_username":"", "group_id":0, "admin_id":0, "support_username":"support_demo", "enabled":False, "revision":saved["revision"]}
+                patch = {"token":"", "bot_username":"", "group_id":-88, "admin_id":0, "support_username":"support_demo", "enabled":False, "mute_on_close":True, "revision":saved["revision"]}
                 reply = api("bot-settings", patch)
                 assert reply["support_username"] == "support_demo"
                 assert proc.wait(timeout=15) == 0
                 proc = start(log)
                 active = api("bot-settings")
                 assert active["support_username"] == "support_demo" and not active["restart_required"]
+                assert active["mute_on_close"] is True and active["group_id"] == -88
                 assert api("bot-settings", patch)["revision"] == reply["revision"]
                 time.sleep(.3)
                 assert proc.poll() is None, "replayed save restarted unchanged configuration"

@@ -36,3 +36,27 @@ func TestSaveLostResponseReplayAndConflict(t *testing.T) {
 		t.Fatal("saved value lost")
 	}
 }
+
+func TestMuteOnClosePersistsAndDefaultsOff(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "runtime.json")
+	s, err := Open(path, Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Current().MuteOnClose {
+		t.Fatal("must default off")
+	}
+	if err = s.Save(Patch{MuteOnClose: true}); err == nil {
+		t.Fatal("missing group accepted")
+	}
+	if err = s.Save(Patch{MuteOnClose: true, GroupID: -88}); err != nil {
+		t.Fatal(err)
+	}
+	s, err = Open(path, Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !s.Current().MuteOnClose || s.View()["mute_on_close"] != true {
+		t.Fatal("toggle lost after restart")
+	}
+}

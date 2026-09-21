@@ -18,10 +18,12 @@ type Keyboard struct {
 	Rows [][]Button `json:"inline_keyboard"`
 }
 type MessagePayload struct {
-	Media  []MediaPhoto `json:"media,omitempty"`
-	ChatID int64        `json:"chat_id"`
-	Text   string       `json:"text"`
-	Markup *Keyboard    `json:"reply_markup,omitempty"`
+	GroupAction string       `json:"group_action,omitempty"`
+	RoundID     string       `json:"round_id,omitempty"`
+	Media       []MediaPhoto `json:"media,omitempty"`
+	ChatID      int64        `json:"chat_id"`
+	Text        string       `json:"text"`
+	Markup      *Keyboard    `json:"reply_markup,omitempty"`
 }
 type MediaPhoto struct {
 	ID      string `json:"id"`
@@ -208,9 +210,11 @@ func (s *Service) ClaimOutbox() (*OutboxItem, error) {
 	var out *OutboxItem
 	e := s.DB.Transaction(func(tx *sqlite.Tx) error {
 		row, e := tx.One(`SELECT o.* FROM outbox o WHERE o.state='PENDING' AND o.next_at<=?
-		 AND NOT EXISTS (SELECT 1 FROM outbox p WHERE p.chat_id=o.chat_id AND p.id<o.id AND p.state!='SENT')
+		 AND NOT EXISTS (SELECT 1 FROM outbox p WHERE p.chat_id=o.chat_id AND p.id<o.id AND p.state!='SENT'
+		 AND (COALESCE(json_extract(CASE WHEN json_valid(p.payload) THEN p.payload ELSE '{}' END,'$.group_action'),'')='')=(COALESCE(json_extract(CASE WHEN json_valid(o.payload) THEN o.payload ELSE '{}' END,'$.group_action'),'')='')
+		 AND NOT (COALESCE(json_extract(CASE WHEN json_valid(p.payload) THEN p.payload ELSE '{}' END,'$.group_action'),'')='mute' AND p.state IN ('FAILED','UNKNOWN')))
 		 AND NOT EXISTS (SELECT 1 FROM outbox p WHERE p.chat_id=o.chat_id AND p.state='SENT' AND p.next_at>?)
-		 ORDER BY o.id LIMIT 1`, now(), now())
+		 ORDER BY CASE WHEN COALESCE(json_extract(CASE WHEN json_valid(o.payload) THEN o.payload ELSE '{}' END,'$.group_action'),'')!='' THEN 0 ELSE 1 END,o.id LIMIT 1`, now(), now())
 		if e != nil || row == nil {
 			return e
 		}
@@ -279,6 +283,11 @@ func (s *Service) ResolveOutbox(tx *sqlite.Tx, id int64, action string, messageI
 		}
 		_, e = tx.Exec("UPDATE outbox SET state='SENT',message_id=?,last_error='管理员已核实送达' WHERE id=?", messageID, id)
 	case "skip":
+		var payload MessagePayload
+		_ = json.Unmarshal([]byte(row["payload"]), &payload)
+		if payload.GroupAction == "restore" {
+			return nil, bad("恢复群权限任务不能直接跳过；请重试，或手动恢复后选择已核实")
+		}
 		if strings.HasPrefix(row["card_key"], "round:") {
 			return nil, bad("期次卡片不能直接跳过；请核实message_id或显式重试")
 		}

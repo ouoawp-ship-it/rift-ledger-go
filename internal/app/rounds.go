@@ -171,6 +171,12 @@ func (s *Service) CloseRound(tx *sqlite.Tx, id string) (any, error) {
 	if e != nil {
 		return nil, e
 	}
+	if e = s.queue(tx, "round-close:"+r.ID, s.Config.GroupID, "", fmt.Sprintf("峡谷账房｜%s期\n封盘通知\n已停止答题，本期不再受理下注。\n等待开奖结果，个人查询继续开放。", r.Number), false); e != nil {
+		return nil, e
+	}
+	if e = s.queueGroupMute(tx, r); e != nil {
+		return nil, e
+	}
 	if e = s.roundCard(tx, r, "封盘：停止受理。个人查询继续开放，等待手动录入伤害。"); e != nil {
 		return nil, e
 	}
@@ -525,6 +531,9 @@ func (s *Service) Settle(tx *sqlite.Tx, id string, in SettleInput) (any, error) 
 		return nil, e
 	}
 	if e = s.queueRoundResult(tx, r); e != nil {
+		return nil, e
+	}
+	if e = s.queueGroupRestore(tx, r); e != nil {
 		return nil, e
 	}
 	if e = s.roundCard(tx, r, "开奖完成，结果已经保存。"); e != nil {

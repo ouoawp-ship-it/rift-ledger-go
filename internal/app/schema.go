@@ -6,6 +6,7 @@ import (
 )
 
 var schema = []string{
+	`CREATE TABLE IF NOT EXISTS group_permissions (round_id TEXT PRIMARY KEY,chat_id INTEGER NOT NULL,original TEXT NOT NULL DEFAULT '')`,
 	`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY,value TEXT NOT NULL)`,
 	`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY CHECK(id=1),version INTEGER NOT NULL,rules TEXT NOT NULL)`,
 	`CREATE TABLE IF NOT EXISTS accounts (id TEXT PRIMARY KEY,name TEXT NOT NULL,role TEXT NOT NULL CHECK(role IN ('player','house','fees','external')),telegram_id INTEGER UNIQUE,enabled INTEGER NOT NULL DEFAULT 0,balance INTEGER NOT NULL DEFAULT 0,locked INTEGER NOT NULL DEFAULT 0,created_at INTEGER NOT NULL,CHECK(locked>=0),CHECK(role='external' OR (balance>=locked AND balance>=0)))`,
@@ -39,7 +40,7 @@ func initialize(db *sqlite.DB) error {
 		if e != nil {
 			return e
 		}
-		if v != nil && v["value"] != "1" && v["value"] != "2" && v["value"] != "3" {
+		if v != nil && v["value"] != "1" && v["value"] != "2" && v["value"] != "3" && v["value"] != "4" {
 			return fmt.Errorf("数据库版本不匹配，拒绝自动降级")
 		}
 		if _, e = tx.Exec("INSERT OR IGNORE INTO meta(key,value) VALUES('schema_version','1')"); e != nil {
@@ -55,7 +56,7 @@ func initialize(db *sqlite.DB) error {
 				return e
 			}
 		}
-		if v == nil || v["value"] != "3" {
+		if v == nil || v["value"] != "3" && v["value"] != "4" {
 			if e = migrateMoney(tx); e != nil {
 				return fmt.Errorf("migration 3: %w", e)
 			}
@@ -67,6 +68,13 @@ func initialize(db *sqlite.DB) error {
 			if _, e = tx.Exec("INSERT OR IGNORE INTO accounts(id,name,role,enabled,created_at) VALUES(?,?,?,1,?)", a.id, a.name, a.role, now()); e != nil {
 				return e
 			}
+		}
+		if _, e = tx.Exec("UPDATE meta SET value='4' WHERE key='schema_version'"); e != nil {
+			return e
+		}
+		// Re-applying saved group permissions is idempotent, unlike sending a message.
+		if _, e = tx.Exec("UPDATE outbox SET state='PENDING' WHERE state='INFLIGHT' AND COALESCE(json_extract(CASE WHEN json_valid(payload) THEN payload ELSE '{}' END,'$.group_action'),'')!=''"); e != nil {
+			return e
 		}
 		// An interrupted network send is NOT blindly sent a second time.
 		_, e = tx.Exec("UPDATE outbox SET state='UNKNOWN',last_error='进程重启时发现发送中任务；请核实Telegram后处理' WHERE state='INFLIGHT'")

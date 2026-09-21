@@ -188,6 +188,7 @@ type Preview struct {
 	NextRoundID     string           `json:"next_round_id,omitempty"`
 }
 type RuntimeConfig struct {
+	MuteOnClose     bool
 	GroupID         int64
 	NotifyAdminID   int64
 	BotUsername     string

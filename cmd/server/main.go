@@ -102,7 +102,7 @@ func run() error {
 		return e
 	}
 	saved := settings.Current()
-	cfg = app.RuntimeConfig{BotUsername: saved.BotUsername, GroupID: saved.GroupID, NotifyAdminID: saved.AdminID, SupportUsername: saved.SupportUsername}
+	cfg = app.RuntimeConfig{BotUsername: saved.BotUsername, GroupID: saved.GroupID, NotifyAdminID: saved.AdminID, SupportUsername: saved.SupportUsername, MuteOnClose: saved.MuteOnClose}
 	botToken := saved.Token
 	if !saved.Enabled {
 		botToken = ""

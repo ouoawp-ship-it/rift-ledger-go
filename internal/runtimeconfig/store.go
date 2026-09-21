@@ -19,6 +19,7 @@ type Config struct {
 	AdminID         int64  `json:"admin_id"`
 	SupportUsername string `json:"support_username"`
 	Enabled         bool   `json:"enabled"`
+	MuteOnClose     bool   `json:"mute_on_close"`
 	Revision        int64  `json:"revision"`
 	SavedAt         int64  `json:"saved_at"`
 }
@@ -29,6 +30,7 @@ type Patch struct {
 	AdminID         int64  `json:"admin_id"`
 	SupportUsername string `json:"support_username"`
 	Enabled         bool   `json:"enabled"`
+	MuteOnClose     bool   `json:"mute_on_close"`
 	Revision        int64  `json:"revision"`
 }
 type Store struct {
@@ -70,6 +72,9 @@ func Validate(c Config) error {
 	if c.Enabled && (c.Token == "" || c.BotUsername == "") {
 		return errors.New("启用Telegram必须填写Token和机器人用户名")
 	}
+	if c.MuteOnClose && c.GroupID == 0 {
+		return errors.New("启用封盘自动禁言需要填写群 ID")
+	}
 	if c.GroupID > 0 || c.GroupID < -4503599627370495 || c.AdminID < 0 || c.AdminID > 4503599627370495 {
 		return errors.New("群ID必须为负整数；管理员ID必须为有效非负整数")
 	}
@@ -84,7 +89,7 @@ func (s *Store) View() map[string]any {
 	if c.Token != "" {
 		mask = "******"
 	}
-	return map[string]any{"token_mask": mask, "bot_username": c.BotUsername, "group_id": c.GroupID, "admin_id": c.AdminID, "support_username": c.SupportUsername, "enabled": c.Enabled, "active_enabled": s.active.Enabled, "revision": c.Revision, "saved_at": c.SavedAt, "restart_required": c != s.active, "active": map[string]any{"bot_username": s.active.BotUsername, "group_id": s.active.GroupID, "admin_id": s.active.AdminID, "support_username": s.active.SupportUsername}}
+	return map[string]any{"token_mask": mask, "bot_username": c.BotUsername, "group_id": c.GroupID, "admin_id": c.AdminID, "support_username": c.SupportUsername, "enabled": c.Enabled, "mute_on_close": c.MuteOnClose, "active_enabled": s.active.Enabled, "revision": c.Revision, "saved_at": c.SavedAt, "restart_required": c != s.active, "active": map[string]any{"bot_username": s.active.BotUsername, "group_id": s.active.GroupID, "admin_id": s.active.AdminID, "support_username": s.active.SupportUsername}}
 }
 func (s *Store) Save(p Patch) error {
 	s.mu.Lock()
@@ -93,7 +98,7 @@ func (s *Store) Save(p Patch) error {
 	if token == "" {
 		token = s.saved.Token
 	}
-	c := Config{Token: token, BotUsername: strings.TrimPrefix(strings.TrimSpace(p.BotUsername), "@"), GroupID: p.GroupID, AdminID: p.AdminID, SupportUsername: strings.TrimPrefix(strings.TrimSpace(p.SupportUsername), "@"), Enabled: p.Enabled, Revision: s.saved.Revision + 1, SavedAt: time.Now().Unix()}
+	c := Config{Token: token, BotUsername: strings.TrimPrefix(strings.TrimSpace(p.BotUsername), "@"), GroupID: p.GroupID, AdminID: p.AdminID, SupportUsername: strings.TrimPrefix(strings.TrimSpace(p.SupportUsername), "@"), Enabled: p.Enabled, MuteOnClose: p.MuteOnClose, Revision: s.saved.Revision + 1, SavedAt: time.Now().Unix()}
 	compare := c
 	compare.Revision, compare.SavedAt = s.saved.Revision, s.saved.SavedAt
 	// A lost save response can be retried without erasing the form or restarting

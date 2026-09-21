@@ -101,7 +101,7 @@ func TestMoneyMigrationPreservesLedgerSnapshotsAndReplay(t *testing.T) {
 		t.Fatal("ledger delete trigger lost")
 	}
 	v, _ := db.Query("SELECT value FROM meta WHERE key='schema_version'")
-	if v[0]["value"] != "3" {
+	if v[0]["value"] != "4" {
 		t.Fatal(v)
 	}
 }

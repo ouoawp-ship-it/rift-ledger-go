@@ -271,6 +271,9 @@ func (c *Client) SendOne(ctx context.Context, s *app.Service) (bool, error) {
 	sendCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
 	defer cancel()
 	ctx = sendCtx
+	if item.Payload.GroupAction != "" {
+		return c.sendGroupPermission(ctx, s, *item)
+	}
 	if len(item.Payload.Media) > 0 {
 		return c.sendMedia(ctx, s, *item)
 	}
