@@ -85,7 +85,9 @@ func (s *Service) BindBot(botID int64) error {
 // replies together. Rejected bets are also consumed, so replay cannot make a
 // previously rejected request succeed later. Only genuine private messages and
 // private callbacks are routed; edited messages never modify accepted orders.
-func (s *Service) HandleUpdate(u TGUpdate) error {
+func (s *Service) HandleUpdate(u TGUpdate) (err error) {
+	started := time.Now()
+	defer func() { s.recordUpdate(u.ID, started, err); s.NotifyOutbox() }()
 	if u.ID < 0 {
 		return bad("无效更新ID")
 	}

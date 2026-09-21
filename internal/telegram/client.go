@@ -20,10 +20,11 @@ import (
 )
 
 type Client struct {
-	Token   string
-	BaseURL string
-	HTTP    *http.Client
-	paced   bool
+	Token     string
+	BaseURL   string
+	HTTP      *http.Client
+	paced     bool
+	scheduler *sendScheduler
 }
 type APIError struct {
 	Code        int
@@ -203,11 +204,31 @@ func (c *Client) Run(ctx context.Context, s *app.Service) error {
 	}
 	senderCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	callbacks := make(chan string, 128)
+	var callbackWorkers sync.WaitGroup
+	for i := 0; i < 2; i++ {
+		callbackWorkers.Add(1)
+		go func() {
+			defer callbackWorkers.Done()
+			for {
+				select {
+				case <-senderCtx.Done():
+					return
+				case id := <-callbacks:
+					ackCtx, stop := context.WithTimeout(senderCtx, 3*time.Second)
+					_ = c.Call(ackCtx, "answerCallbackQuery", map[string]any{"callback_query_id": id}, nil)
+					stop()
+				}
+			}
+		}()
+	}
+	defer func() { cancel(); callbackWorkers.Wait() }()
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		sender := *c
 		sender.paced = true
+		sender.scheduler = newSendScheduler()
 		var workers sync.WaitGroup
 		for i := 0; i < 4; i++ {
 			workers.Add(1)
@@ -253,7 +274,11 @@ func (c *Client) Run(ctx context.Context, s *app.Service) error {
 				break
 			}
 			if u.Callback != nil {
-				_ = c.Call(ctx, "answerCallbackQuery", map[string]any{"callback_query_id": u.Callback.ID}, nil)
+				select {
+				case callbacks <- u.Callback.ID:
+				default:
+					slog.Warn("Telegram按钮应答队列已满", "update_id", u.ID)
+				}
 			}
 		}
 	}
@@ -271,6 +296,9 @@ func (c *Client) SendOne(ctx context.Context, s *app.Service) (bool, error) {
 	sendCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
 	defer cancel()
 	ctx = sendCtx
+	if c.paced && c.scheduler != nil && !c.scheduler.wait(ctx, item.Payload.ChatID) {
+		return true, s.CompleteOutbox(*item, "PENDING", 0, "发送限流等待被中断，尚未发出请求", 1)
+	}
 	if item.Payload.GroupAction != "" {
 		return c.sendGroupPermission(ctx, s, *item)
 	}
@@ -339,11 +367,16 @@ func (c *Client) sendLoop(ctx context.Context, s *app.Service) {
 		if e != nil {
 			slog.Error("消息队列处理失败", "error", e)
 		}
-		d := 500 * time.Millisecond
-		if sent {
-			d = time.Second
+		if e != nil {
+			if !wait(ctx, time.Second) {
+				return
+			}
+			continue
 		}
-		if !wait(ctx, d) {
+		if sent {
+			continue
+		}
+		if !waitForOutbox(ctx, s.OutboxWake()) {
 			return
 		}
 	}

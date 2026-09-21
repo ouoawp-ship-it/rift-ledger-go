@@ -1,6 +1,6 @@
 'use strict';
 let botConnectionTimer=null,botConnectionRequest=null,botConnectionReceivedAt=0;
-const botConnectionLabels={online:'机器人接收正常',degraded:'机器人接收正常 · 发送受阻',connecting:'机器人连接中',disabled:'机器人未启用',error:'机器人连接异常',stale:'机器人连接超时',unreachable:'机器人状态无法获取',unknown:'机器人状态待连接'};
+const botConnectionLabels={online:'机器人接收正常',degraded:'机器人运行需处理',connecting:'机器人连接中',disabled:'机器人未启用',error:'机器人连接异常',stale:'机器人连接超时',unreachable:'机器人状态无法获取',unknown:'机器人状态待连接'};
 
 function renderBotConnection(status){
  const code=Object.hasOwn(botConnectionLabels,status.state)?status.state:'unknown';
@@ -9,9 +9,9 @@ function renderBotConnection(status){
  badge.title=status.message;
  $('bot-connection-label').textContent=botConnectionLabels[code];
  const known=Number.isInteger(status.pending)&&Number.isInteger(status.needs_review);
- $('bot-queue-count').textContent=known?status.pending+' 条待发送':'—';
+ $('bot-queue-count').textContent=known?status.pending+' 条待发送'+(status.sender?.inflight?' · '+status.sender.inflight+' 条发送中':''):'—';
  $('bot-queue-count').dataset.warning=String(known&&status.needs_review>0);
- $('bot-queue-detail').textContent=known?(status.needs_review?status.needs_review+' 条失败或待核实，请在发送记录处理':'暂无失败或待核实消息'):'暂时无法确认发送状态';
+ $('bot-queue-detail').textContent=known?(status.needs_review?status.needs_review+' 条失败或待核实，请在发送记录处理':(status.sender?.oldest_age>=60?'最老任务等待 '+status.sender.oldest_age+' 秒，请检查发送队列':'暂无失败或待核实消息')):'暂时无法确认发送状态';
  $('bot-connection-panel').dataset.state=code;
  $('bot-panel-label').textContent=botConnectionLabels[code].replace('机器人','');
  $('bot-connection-detail').textContent=status.message;

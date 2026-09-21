@@ -16,6 +16,8 @@ import (
 )
 
 type Service struct {
+	outboxWake chan struct{}
+	operations operationMonitor
 	DB         *sqlite.DB
 	Config     RuntimeConfig
 	Settings   *runtimeconfig.Store
@@ -27,7 +29,7 @@ func New(db *sqlite.DB, c RuntimeConfig) (*Service, error) {
 	if e := initialize(db); e != nil {
 		return nil, e
 	}
-	return &Service{DB: db, Config: c}, nil
+	return &Service{DB: db, Config: c, outboxWake: make(chan struct{}, 1), operations: operationMonitor{StartedAt: now(), State: "idle"}}, nil
 }
 
 // EnablePlayerOnly removes empty legacy operator/fee accounts and switches
@@ -87,6 +89,7 @@ func fingerprint(v any) string {
 // the same key and payload replays the response, not the mutation. Keys reused
 // for different commands are rejected. Business validation is always in core.
 func (s *Service) Command(key, action string, payload any, fn func(*sqlite.Tx) (any, error)) (json.RawMessage, error) {
+	defer s.NotifyOutbox()
 	if len(key) < 8 || len(key) > 160 {
 		return nil, bad("写操作需要8至160字符的Idempotency-Key业务号")
 	}
@@ -446,7 +449,7 @@ func (s *Service) PlayerSummary(limit, offset int) (any, error) {
 		if e != nil {
 			return e
 		}
-		rows, e := tx.Query(`SELECT a.id,a.telegram_id,a.name,a.balance,a.locked,a.enabled,COALESCE(u.username,'') AS username,COALESCE(u.first_name,'') AS first_name,COALESCE(u.last_name,'') AS last_name,COALESCE((SELECT SUM(b.stake) FROM bets b WHERE b.account_id=a.id AND b.round_id=? AND b.state='RESERVED'),0) AS round_stake,COALESCE((SELECT group_concat(CAST(b.position AS TEXT)||':'||json_extract(r.heroes,'$['||(b.position-1)||'].name'),'、') FROM bets b JOIN rounds r ON r.id=b.round_id WHERE b.account_id=a.id AND b.round_id=? AND b.state='RESERVED'),'') AS round_content,COALESCE((SELECT SUM(b.game_delta) FROM bets b JOIN rounds r ON r.id=b.round_id WHERE b.account_id=a.id AND r.state IN ('SETTLED','VOID') AND b.settled_at=(SELECT MAX(b2.settled_at) FROM bets b2 JOIN rounds r2 ON r2.id=b2.round_id WHERE b2.account_id=a.id AND r2.state IN ('SETTLED','VOID'))),0) AS last_profit FROM accounts a LEFT JOIN telegram_users u ON u.telegram_user_id=a.telegram_id WHERE a.role='player' ORDER BY a.created_at DESC LIMIT ? OFFSET ?`, func() string {
+		rows, e := tx.Query(`SELECT a.id,a.telegram_id,a.name,a.balance,a.locked,a.enabled,COALESCE(u.username,'') AS username,COALESCE(u.first_name,'') AS first_name,COALESCE(u.last_name,'') AS last_name,COALESCE((SELECT SUM(b.stake) FROM bets b WHERE b.account_id=a.id AND b.round_id=? AND b.state='RESERVED'),0) AS round_stake,COALESCE((SELECT group_concat(CAST(b.position AS TEXT)||':'||json_extract(r.heroes,'$['||(b.position-1)||'].name'),'、') FROM bets b JOIN rounds r ON r.id=b.round_id WHERE b.account_id=a.id AND b.round_id=? AND b.state='RESERVED'),'') AS round_content,COALESCE((SELECT SUM(b.game_delta) FROM bets b WHERE b.account_id=a.id AND b.round_id=(SELECT b2.round_id FROM bets b2 JOIN rounds r2 ON r2.id=b2.round_id WHERE b2.account_id=a.id AND r2.state IN ('SETTLED','VOID') ORDER BY b2.settled_at DESC,r2.rowid DESC LIMIT 1)),0) AS last_profit FROM accounts a LEFT JOIN telegram_users u ON u.telegram_user_id=a.telegram_id WHERE a.role='player' ORDER BY a.created_at DESC,a.id LIMIT ? OFFSET ?`, func() string {
 			if active != nil {
 				return active.ID
 			}

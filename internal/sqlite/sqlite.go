@@ -23,8 +23,9 @@ import (
 )
 
 type DB struct {
-	mu  sync.Mutex
-	ptr *C.sqlite3
+	metrics dbMetrics
+	mu      sync.Mutex
+	ptr     *C.sqlite3
 }
 type Tx struct{ db *DB }
 type Row map[string]string
@@ -75,8 +76,8 @@ func (d *DB) err(rc C.int) error {
 	return fmt.Errorf("sqlite错误 %d: %s", int(rc), C.GoString(C.sqlite3_errmsg(d.ptr)))
 }
 func (d *DB) Close() error {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	unlock := d.measuredLock()
+	defer unlock()
 	if d.ptr == nil {
 		return nil
 	}
@@ -88,14 +89,14 @@ func (d *DB) Close() error {
 	return nil
 }
 func (d *DB) Exec(q string, args ...any) (int64, error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	unlock := d.measuredLock()
+	defer unlock()
 	_, n, e := d.run(q, args...)
 	return n, e
 }
 func (d *DB) Query(q string, args ...any) ([]Row, error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	unlock := d.measuredLock()
+	defer unlock()
 	r, _, e := d.run(q, args...)
 	return r, e
 }
@@ -116,8 +117,8 @@ func (t *Tx) One(q string, args ...any) (Row, error) {
 }
 
 func (d *DB) Transaction(f func(*Tx) error) (err error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	unlock := d.measuredLock()
+	defer unlock()
 	t := &Tx{d}
 	if _, err = t.Exec("BEGIN IMMEDIATE"); err != nil {
 		return
@@ -138,7 +139,11 @@ func (d *DB) Transaction(f func(*Tx) error) (err error) {
 
 // Read keeps multi-query snapshots internally consistent without permitting a
 // recursive call to DB methods. Use the Tx supplied to the closure throughout.
-func (d *DB) Read(f func(*Tx) error) error { d.mu.Lock(); defer d.mu.Unlock(); return f(&Tx{d}) }
+func (d *DB) Read(f func(*Tx) error) error {
+	unlock := d.measuredLock()
+	defer unlock()
+	return f(&Tx{d})
+}
 
 func (d *DB) run(q string, args ...any) ([]Row, int64, error) {
 	rows := []Row{}

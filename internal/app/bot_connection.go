@@ -12,12 +12,15 @@ import (
 const botStatusMaxAge int64 = 75
 
 type BotConnection struct {
-	State       string `json:"state"`
-	Message     string `json:"message"`
-	UpdatedAt   int64  `json:"updated_at"`
-	CheckedAt   int64  `json:"checked_at"`
-	Pending     int64  `json:"pending"`
-	NeedsReview int64  `json:"needs_review"`
+	ReceiverState string         `json:"receiver_state"`
+	Sender        QueueHealth    `json:"sender"`
+	Business      BusinessHealth `json:"business"`
+	State         string         `json:"state"`
+	Message       string         `json:"message"`
+	UpdatedAt     int64          `json:"updated_at"`
+	CheckedAt     int64          `json:"checked_at"`
+	Pending       int64          `json:"pending"`
+	NeedsReview   int64          `json:"needs_review"`
 }
 
 // Read the running receiver's status, not saved settings or a one-off getMe test.
@@ -35,17 +38,12 @@ func (s *Service) BotConnection() (BotConnection, error) {
 				status.UpdatedAt, _ = strconv.ParseInt(row["value"], 10, 64)
 			}
 		}
-		counts, e := tx.Query("SELECT state,COUNT(*) AS n FROM outbox WHERE state IN ('PENDING','FAILED','UNKNOWN') GROUP BY state")
+		status.Sender, e = readQueueHealth(tx)
 		if e != nil {
 			return e
 		}
-		for _, row := range counts {
-			if row["state"] == "PENDING" {
-				status.Pending += row.Int("n")
-			} else {
-				status.NeedsReview += row.Int("n")
-			}
-		}
+		status.Pending = status.Sender.Pending
+		status.NeedsReview = status.Sender.NeedsReview
 		return nil
 	})
 	if err != nil {
@@ -66,7 +64,17 @@ func (s *Service) BotConnection() (BotConnection, error) {
 		status.State = "stale"
 		status.Message = "机器人连接状态已超时，等待接收器恢复"
 	}
-	if status.State == "online" && status.NeedsReview > 0 {
+	status.ReceiverState = status.State
+	status.Business = s.businessSnapshot()
+	if status.State == "online" && status.Business.State == "error" {
+		status.State = "degraded"
+		status.Message += fmt.Sprintf("｜业务处理失败，更新编号%d，正在重试", status.Business.FailedUpdate)
+	}
+	if status.State == "online" && status.Sender.State == "delayed" {
+		status.State = "degraded"
+		status.Message += fmt.Sprintf("｜发送队列最老任务已等待%d秒", status.Sender.OldestAge)
+	}
+	if (status.State == "online" || status.State == "degraded") && status.NeedsReview > 0 {
 		status.State = "degraded"
 		status.Message += fmt.Sprintf("｜发送队列有%d条失败或待核实、%d条待发送，请打开发送记录处理", status.NeedsReview, status.Pending)
 	}

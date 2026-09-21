@@ -242,6 +242,7 @@ func (s *Service) ClaimOutbox() (*OutboxItem, error) {
 	return out, e
 }
 func (s *Service) CompleteOutbox(item OutboxItem, state string, messageID int64, detail string, retryAfter int64) error {
+	defer s.NotifyOutbox()
 	if len([]rune(detail)) > 300 {
 		detail = string([]rune(detail)[:300])
 	}
@@ -299,12 +300,14 @@ func (s *Service) ResolveOutbox(tx *sqlite.Tx, id int64, action string, messageI
 }
 
 func (s *Service) CompleteMedia(item OutboxItem, state string, id int64, detail, result string, retry int64) error {
+	defer s.NotifyOutbox()
 	return s.DB.Transaction(func(tx *sqlite.Tx) error {
 		_, e := tx.Exec("UPDATE outbox SET state=?,message_id=?,last_error=?,media_result=?,next_at=? WHERE id=? AND state='INFLIGHT'", state, id, detail, result, now()+retry, item.ID)
 		return e
 	})
 }
 func (s *Service) FallbackMedia(item OutboxItem, state, detail string) error {
+	defer s.NotifyOutbox()
 	return s.DB.Transaction(func(tx *sqlite.Tx) error {
 		// Mark the album handled so it cannot block later editable cards. Its actual
 		// failure/unknown outcome stays visible in media_result and last_error.
