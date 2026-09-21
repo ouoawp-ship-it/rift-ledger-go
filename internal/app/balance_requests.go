@@ -51,7 +51,7 @@ func (s *Service) requestBalance(tx *sqlite.Tx, u TGUpdate, a Account, kind stri
 		username = "@" + u.Message.From.Username
 	}
 	content := fmt.Sprintf("%s申请\n玩家：%s\nTelegram：%s\nTG ID：%d\n申请金额：%d\n当前余额：%d\n申请时间：%s", label, a.Name, username, a.TelegramID, amount, a.Balance, timeText())
-	if e = s.queue(tx, fmt.Sprintf("balance-admin:%d", u.ID), s.Config.NotifyAdminID, "", "🔔 新的"+content+"\n请进入后台处理。", false); e != nil {
+	if e = s.queueTemplate(tx, fmt.Sprintf("balance-admin:%d", u.ID), s.Config.NotifyAdminID, "balance_admin", map[string]string{"申请类型": label, "玩家昵称": a.Name, "玩家用户名": username, "玩家ID": fmt.Sprint(a.TelegramID), "申请金额": fmt.Sprintf("%d", amount), "当前余额": fmt.Sprintf("%d", a.Balance), "申请时间": timeText()}, false); e != nil {
 		return "", e
 	}
 	return "📥 " + content + "\n申请状态：等待管理员处理\n请勿重复提交相同申请。", nil
@@ -114,7 +114,7 @@ func (s *Service) ResolveBalanceRequest(tx *sqlite.Tx, id int64, action, note st
 	if action == "REJECTED" {
 		label = "已拒绝"
 	}
-	if e = s.queue(tx, fmt.Sprintf("balance-result:%d", id), a.TelegramID, "", fmt.Sprintf("积分申请 #%d %s\n金额：%d\n当前余额：%d\n备注：%s", id, label, moneyRow(r, "amount"), a.Balance, note), false); e != nil {
+	if e = s.queueTemplate(tx, fmt.Sprintf("balance-result:%d", id), a.TelegramID, "balance_result", map[string]string{"申请编号": fmt.Sprint(id), "审批结果": label, "申请金额": fmt.Sprintf("%d", moneyRow(r, "amount")), "当前余额": fmt.Sprintf("%d", a.Balance), "管理员备注": note}, false); e != nil {
 		return nil, e
 	}
 	return map[string]any{"id": id, "state": action}, nil

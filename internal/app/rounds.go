@@ -148,7 +148,7 @@ func (s *Service) OpenRound(tx *sqlite.Tx, id string) (any, error) {
 	if e != nil {
 		return nil, e
 	}
-	if e = s.roundCard(tx, r, "开始答题：仅机器人私聊受理，封盘后仅可查询。"); e != nil {
+	if e = s.queueOpenTemplate(tx, r); e != nil {
 		return nil, e
 	}
 	if e = s.queueHeroes(tx, r); e != nil {
@@ -171,13 +171,10 @@ func (s *Service) CloseRound(tx *sqlite.Tx, id string) (any, error) {
 	if e != nil {
 		return nil, e
 	}
-	if e = s.queue(tx, "round-close:"+r.ID, s.Config.GroupID, "", fmt.Sprintf("峡谷账房｜%s期\n封盘通知\n已停止答题，本期不再受理下注。\n等待开奖结果，个人查询继续开放。", r.Number), false); e != nil {
+	if e = s.queueTemplate(tx, "round-close:"+r.ID, s.Config.GroupID, "round_close", map[string]string{"当前期数": r.Number + "期"}, false); e != nil {
 		return nil, e
 	}
 	if e = s.queueGroupMute(tx, r); e != nil {
-		return nil, e
-	}
-	if e = s.roundCard(tx, r, "封盘：停止受理。个人查询继续开放，等待手动录入伤害。"); e != nil {
 		return nil, e
 	}
 	return r, nil
@@ -272,11 +269,7 @@ func (s *Service) PlaceBet(tx *sqlite.Tx, in BetInput) (Bet, error) {
 		return empty, e
 	}
 	if s.Config.GroupID != 0 {
-		text := fmt.Sprintf("注单已受理\n%s期\n玩家ID：%d\n%d号 %s｜本金%d\n注单：%s", r.Number, a.TelegramID, b.Position, r.Heroes[b.Position-1].Name, b.Stake, b.ID)
-		if !s.PlayerOnly {
-			text = fmt.Sprintf("注单已受理\n%s期\n玩家ID：%d\n%d号 %s｜本金%d｜费用%d\n注单：%s", r.Number, a.TelegramID, b.Position, r.Heroes[b.Position-1].Name, b.Stake, b.Fee, b.ID)
-		}
-		if e = s.queue(tx, "bet:"+b.ID, s.Config.GroupID, "", text, false); e != nil {
+		if e = s.queueTemplate(tx, "bet:"+b.ID, s.Config.GroupID, "bet_group", map[string]string{"当前期数": r.Number + "期", "玩家ID": fmt.Sprint(a.TelegramID), "英雄位置": fmt.Sprint(b.Position), "英雄名称": r.Heroes[b.Position-1].Name, "下注金额": fmt.Sprintf("%d", b.Stake), "注单编号": b.ID}, false); e != nil {
 			return empty, e
 		}
 	}
@@ -421,7 +414,7 @@ func (s *Service) CancelRound(tx *sqlite.Tx, id, reason string) (any, error) {
 		return nil, e
 	}
 	in.PreviewToken = p.Token
-	if e = s.queue(tx, "cancel:"+id, s.Config.GroupID, "", fmt.Sprintf("峡谷账房｜%s期\n本期已取消，全部注单作废，本金冻结已解除，不计算输赢。\n原因：%s", r.Number, reason), false); e != nil {
+	if e = s.queueTemplate(tx, "cancel:"+id, s.Config.GroupID, "round_cancel", map[string]string{"当前期数": r.Number + "期", "取消原因": reason}, false); e != nil {
 		return nil, e
 	}
 	return s.Settle(tx, id, in)
@@ -536,14 +529,11 @@ func (s *Service) Settle(tx *sqlite.Tx, id string, in SettleInput) (any, error) 
 	if e = s.queueGroupRestore(tx, r); e != nil {
 		return nil, e
 	}
-	if e = s.roundCard(tx, r, "开奖完成，结果已经保存。"); e != nil {
-		return nil, e
-	}
 	if s.Config.GroupID != 0 {
 		if e = s.queueWinners(tx, r); e != nil {
 			return nil, e
 		}
-		if e = s.queue(tx, "next:"+r.ID, s.Config.GroupID, "", fmt.Sprintf("下一期：%s期\n等待管理员配置敌方五英雄并手动选庄；尚未开放下注。", number), true); e != nil {
+		if e = s.queueTemplate(tx, "next:"+r.ID, s.Config.GroupID, "round_next", map[string]string{"下一期数": number + "期"}, true); e != nil {
 			return nil, e
 		}
 	}
@@ -564,8 +554,7 @@ func (s *Service) Settle(tx *sqlite.Tx, id string, in SettleInput) (any, error) 
 		if a.TelegramID == 0 {
 			continue
 		}
-		msg := fmt.Sprintf("%s期结算\n注单%d笔｜游戏变化%+d｜费用%d\n本期净变化%+d\n当前余额%d｜可用%d", r.Number, int64(t[2]), t[0], t[1], t[0]-t[1], a.Balance, a.Available)
-		if e = s.queue(tx, "settle:"+r.ID+":"+id, a.TelegramID, "", msg, false); e != nil {
+		if e = s.queueTemplate(tx, "settle:"+r.ID+":"+id, a.TelegramID, "settle_private", map[string]string{"当前期数": r.Number + "期", "注单数量": fmt.Sprint(int64(t[2])), "游戏盈亏": fmt.Sprintf("%+d", t[0]), "费用": fmt.Sprintf("%d", t[1]), "净盈亏": fmt.Sprintf("%+d", t[0]-t[1]), "当前余额": fmt.Sprintf("%d", a.Balance), "可用余额": fmt.Sprintf("%d", a.Available)}, false); e != nil {
 			return nil, e
 		}
 	}

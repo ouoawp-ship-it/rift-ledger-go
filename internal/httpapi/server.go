@@ -73,7 +73,7 @@ func newAPI(s *app.Service, token string, restart func()) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("X-Frame-Options", "DENY")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' https://ddragon.leagueoflegends.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' blob: https://ddragon.leagueoflegends.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
 		w.Header().Set("Cache-Control", "no-store")
 		defer func() {
 			if v := recover(); v != nil {
@@ -170,6 +170,9 @@ func pagination(r *http.Request) (int, int) {
 	return limit, offset
 }
 func (a *API) route(w http.ResponseWriter, r *http.Request) {
+	if a.messageRoutes(w, r) {
+		return
+	}
 	s := a.Service
 	path := strings.Trim(r.URL.Path, "/")
 	parts := strings.Split(path, "/")

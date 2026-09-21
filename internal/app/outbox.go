@@ -18,6 +18,7 @@ type Keyboard struct {
 	Rows [][]Button `json:"inline_keyboard"`
 }
 type MessagePayload struct {
+	ImageID     string       `json:"image_id,omitempty"`
 	GroupAction string       `json:"group_action,omitempty"`
 	RoundID     string       `json:"round_id,omitempty"`
 	Media       []MediaPhoto `json:"media,omitempty"`
@@ -121,7 +122,7 @@ func (s *Service) queueRoundResult(tx *sqlite.Tx, r Round) error {
 		return nil
 	}
 	var text strings.Builder
-	fmt.Fprintf(&text, "峡谷账房｜%s期\n开奖结果\n", r.Number)
+
 	if r.Result.WholeVoid {
 		fmt.Fprintf(&text, "整期流局：%s\n", r.Result.Reason)
 	}
@@ -141,8 +142,7 @@ func (s *Service) queueRoundResult(tx *sqlite.Tx, r Round) error {
 		}
 		fmt.Fprintf(&text, "结果：%s\n", outcome)
 	}
-	fmt.Fprintf(&text, "\n玩家本期游戏合计：%+d 积分\n本期已结算。", r.Result.PlayerGameDelta)
-	return s.queue(tx, "round-result:"+r.ID, s.Config.GroupID, "", text.String(), false)
+	return s.queueTemplate(tx, "round-result:"+r.ID, s.Config.GroupID, "round_result", map[string]string{"当前期数": r.Number + "期", "开奖结果": strings.TrimSpace(text.String()), "本期合计盈亏": fmt.Sprintf("%+d", r.Result.PlayerGameDelta)}, false)
 }
 
 // Queue a separate winners list after the round result announcement.
@@ -172,13 +172,13 @@ func (s *Service) queueWinners(tx *sqlite.Tx, r Round) error {
 		}
 	}
 	sort.Strings(ids)
-	heading := fmt.Sprintf("峡谷账房｜%s期\n中奖名单\n", r.Number)
+
 	if len(ids) == 0 {
 		message := "本期无人中奖。"
 		if r.Result.WholeVoid {
 			message = "本期整期流局，无中奖名单。"
 		}
-		return s.queue(tx, "winners:"+r.ID+":0", s.Config.GroupID, "", heading+message, false)
+		return s.queueTemplate(tx, "winners:"+r.ID+":0", s.Config.GroupID, "winners", map[string]string{"当前期数": r.Number + "期", "中奖名单": message}, false)
 	}
 	// Bound each page well below Telegram's message limit, including long nicknames.
 	for start := 0; start < len(ids); start += 15 {
@@ -186,7 +186,7 @@ func (s *Service) queueWinners(tx *sqlite.Tx, r Round) error {
 		if end > len(ids) {
 			end = len(ids)
 		}
-		text := heading + fmt.Sprintf("中奖玩家%d人｜第%d/%d页\n中奖盈利不含本金；本期净变化包含全部注单。\n", len(ids), start/15+1, (len(ids)+14)/15)
+		text := fmt.Sprintf("中奖玩家%d人｜第%d/%d页\n中奖盈利不含本金；本期净变化包含全部注单。\n", len(ids), start/15+1, (len(ids)+14)/15)
 		for i := start; i < end; i++ {
 			a, err := getAccount(tx, ids[i])
 			if err != nil {
@@ -199,7 +199,7 @@ func (s *Service) queueWinners(tx *sqlite.Tx, r Round) error {
 			w := totals[ids[i]]
 			text += fmt.Sprintf("\n%d. %s（ID：%d）\n中奖%d笔｜中奖盈利%+d｜本期净变化%+d\n", i+1, string(name), a.TelegramID, w.count, w.profit, w.net)
 		}
-		if err := s.queue(tx, fmt.Sprintf("winners:%s:%d", r.ID, start/15), s.Config.GroupID, "", text, false); err != nil {
+		if err := s.queueTemplate(tx, fmt.Sprintf("winners:%s:%d", r.ID, start/15), s.Config.GroupID, "winners", map[string]string{"当前期数": r.Number + "期", "中奖名单": text}, false); err != nil {
 			return err
 		}
 	}

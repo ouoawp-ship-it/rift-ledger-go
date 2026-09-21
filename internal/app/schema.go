@@ -6,6 +6,8 @@ import (
 )
 
 var schema = []string{
+	`CREATE TABLE IF NOT EXISTS message_templates (id TEXT PRIMARY KEY,revision INTEGER NOT NULL,blocks TEXT NOT NULL)`,
+	`CREATE TABLE IF NOT EXISTS message_images (id TEXT PRIMARY KEY,mime TEXT NOT NULL,data TEXT NOT NULL,created_at INTEGER NOT NULL)`,
 	`CREATE TABLE IF NOT EXISTS group_permissions (round_id TEXT PRIMARY KEY,chat_id INTEGER NOT NULL,original TEXT NOT NULL DEFAULT '')`,
 	`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY,value TEXT NOT NULL)`,
 	`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY CHECK(id=1),version INTEGER NOT NULL,rules TEXT NOT NULL)`,
@@ -40,7 +42,7 @@ func initialize(db *sqlite.DB) error {
 		if e != nil {
 			return e
 		}
-		if v != nil && v["value"] != "1" && v["value"] != "2" && v["value"] != "3" && v["value"] != "4" {
+		if v != nil && v["value"] != "1" && v["value"] != "2" && v["value"] != "3" && v["value"] != "4" && v["value"] != "5" {
 			return fmt.Errorf("数据库版本不匹配，拒绝自动降级")
 		}
 		if _, e = tx.Exec("INSERT OR IGNORE INTO meta(key,value) VALUES('schema_version','1')"); e != nil {
@@ -56,7 +58,7 @@ func initialize(db *sqlite.DB) error {
 				return e
 			}
 		}
-		if v == nil || v["value"] != "3" && v["value"] != "4" {
+		if v == nil || v["value"] == "1" || v["value"] == "2" {
 			if e = migrateMoney(tx); e != nil {
 				return fmt.Errorf("migration 3: %w", e)
 			}
@@ -69,7 +71,7 @@ func initialize(db *sqlite.DB) error {
 				return e
 			}
 		}
-		if _, e = tx.Exec("UPDATE meta SET value='4' WHERE key='schema_version'"); e != nil {
+		if _, e = tx.Exec("UPDATE meta SET value='5' WHERE key='schema_version'"); e != nil {
 			return e
 		}
 		// Re-applying saved group permissions is idempotent, unlike sending a message.
@@ -77,6 +79,10 @@ func initialize(db *sqlite.DB) error {
 			return e
 		}
 		// An interrupted network send is NOT blindly sent a second time.
+		// Decorative custom photos must not hold the following business text hostage.
+		if _, e = tx.Exec("UPDATE outbox SET state='SENT',media_result='UNKNOWN',last_error='重启时自定义图片结果未知；已继续后续文字，请在群内核实' WHERE state='INFLIGHT' AND COALESCE(json_extract(CASE WHEN json_valid(payload) THEN payload ELSE '{}' END,'$.image_id'),'')!=''"); e != nil {
+			return e
+		}
 		_, e = tx.Exec("UPDATE outbox SET state='UNKNOWN',last_error='进程重启时发现发送中任务；请核实Telegram后处理' WHERE state='INFLIGHT'")
 		return e
 	})

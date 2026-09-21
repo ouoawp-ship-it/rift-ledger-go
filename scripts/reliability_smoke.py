@@ -59,6 +59,11 @@ def main():
         with (tmp / "server.log").open("wb") as log:
             proc = start(log)
             try:
+                template = next(t for t in api("message-templates") if t["id"] == "round_close")
+                template_patch = {"id":"round_close", "revision":template["revision"], "blocks":[{"type":"text", "text":"🔔 {当前期数} 请等待开奖结果"}]}
+                template_saved = api("message-templates", template_patch, "template-save-replay")
+                assert template_saved == api("message-templates", template_patch, "template-save-replay")
+                assert proc.poll() is None
                 state = api("state")
                 rules = state["rules"] | {"payout":[1.2]*11, "confirmed":True}
                 api("rules", {"expected_version":state["rules_version"], "rules":rules})
@@ -94,6 +99,11 @@ def main():
                 assert reply["support_username"] == "support_demo"
                 assert proc.wait(timeout=15) == 0
                 proc = start(log)
+                persisted = next(t for t in api("message-templates") if t["id"] == "round_close")
+                assert persisted == template_saved
+                rendered = api("message-templates/preview", {"id":persisted["id"], "revision":persisted["revision"], "blocks":persisted["blocks"]})
+                assert rendered[0]["text"] == "🔔 2026-09-21-0007期 请等待开奖结果"
+                checks.append("custom text/emoji template save is idempotent, immediate and survives restart; preview replaces period")
                 active = api("bot-settings")
                 assert active["support_username"] == "support_demo" and not active["restart_required"]
                 assert active["mute_on_close"] is True and active["group_id"] == -88

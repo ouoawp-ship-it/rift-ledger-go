@@ -274,7 +274,7 @@ func (c *Client) SendOne(ctx context.Context, s *app.Service) (bool, error) {
 	if item.Payload.GroupAction != "" {
 		return c.sendGroupPermission(ctx, s, *item)
 	}
-	if len(item.Payload.Media) > 0 {
+	if len(item.Payload.Media) > 0 || item.Payload.ImageID != "" {
 		return c.sendMedia(ctx, s, *item)
 	}
 	payload := map[string]any{"chat_id": item.Payload.ChatID, "text": item.Payload.Text}
@@ -358,7 +358,22 @@ func (c *Client) sendMedia(ctx context.Context, s *app.Service, item app.OutboxI
 	var e error
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
-	if len(item.Payload.Media) != 5 || s.Champions == nil {
+	if item.Payload.ImageID != "" {
+		var data []byte
+		var mime string
+		data, mime, e = s.MessageImage(item.Payload.ImageID)
+		if e == nil {
+			ext := "png"
+			if mime == "image/jpeg" {
+				ext = "jpg"
+			}
+			var part io.Writer
+			part, e = writer.CreateFormFile("photo", "message."+ext)
+			if e == nil {
+				_, e = part.Write(data)
+			}
+		}
+	} else if len(item.Payload.Media) != 5 || s.Champions == nil {
 		e = errors.New("英雄缓存不可用")
 	} else {
 		photos := make([][]byte, 0, 5)
@@ -384,7 +399,9 @@ func (c *Client) sendMedia(ctx context.Context, s *app.Service, item app.OutboxI
 	}
 	localFailure := e != nil
 	if e == nil {
-		_ = writer.WriteField("caption", item.Payload.Text)
+		if item.Payload.ImageID == "" {
+			_ = writer.WriteField("caption", item.Payload.Text)
+		}
 		_ = writer.WriteField("chat_id", fmt.Sprint(item.Payload.ChatID))
 		_ = writer.Close()
 		var req *http.Request
@@ -432,6 +449,13 @@ func (c *Client) sendMedia(ctx context.Context, s *app.Service, item app.OutboxI
 	}
 	if ae != nil {
 		detail += "：" + ae.Error()
+	}
+	if item.Payload.ImageID != "" {
+		detail = "自定义图片" + map[string]string{"FAILED": "发送失败", "UNKNOWN": "结果未知"}[state] + "；已继续后续文字，请在群内核实。"
+		if ae != nil {
+			detail += " " + ae.Error()
+		}
+		return true, s.CompleteMedia(item, "SENT", 0, detail, state, 0)
 	}
 	slog.Warn("Telegram图片降级", "outbox_id", item.ID, "state", state, "detail", detail)
 	return true, s.FallbackMedia(item, state, detail)
