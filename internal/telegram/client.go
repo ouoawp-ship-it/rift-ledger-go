@@ -216,9 +216,6 @@ func (c *Client) SendOne(ctx context.Context, s *app.Service) (bool, error) {
 		return c.sendMedia(ctx, s, *item)
 	}
 	payload := map[string]any{"chat_id": item.Payload.ChatID, "text": item.Payload.Text}
-	if item.Payload.ThreadID != 0 {
-		payload["message_thread_id"] = item.Payload.ThreadID
-	}
 	if item.Payload.Markup != nil {
 		payload["reply_markup"] = item.Payload.Markup
 	}
@@ -226,7 +223,6 @@ func (c *Client) SendOne(ctx context.Context, s *app.Service) (bool, error) {
 	if item.CardMessageID > 0 {
 		method = "editMessageText"
 		payload["message_id"] = item.CardMessageID
-		delete(payload, "message_thread_id")
 	}
 	var result struct {
 		MessageID int64 `json:"message_id"`
@@ -320,9 +316,6 @@ func (c *Client) sendMedia(ctx context.Context, s *app.Service, item app.OutboxI
 		raw, _ := json.Marshal(media)
 		_ = writer.WriteField("media", string(raw))
 		_ = writer.WriteField("chat_id", fmt.Sprint(item.Payload.ChatID))
-		if item.Payload.ThreadID != 0 {
-			_ = writer.WriteField("message_thread_id", fmt.Sprint(item.Payload.ThreadID))
-		}
 		_ = writer.Close()
 		var req *http.Request
 		req, e = http.NewRequestWithContext(ctx, "POST", c.BaseURL+"/bot"+c.Token+"/sendMediaGroup", &body)

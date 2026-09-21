@@ -12,7 +12,6 @@
 | TG_BOT_TOKEN | 可选机器人Token；不写入数据库或日志 |
 | TG_BOT_USERNAME | 启用机器人时必填，不带@，启动时getMe核实 |
 | TG_GROUP_ID | 群负整数ID；空或0不推送群消息 |
-| TG_TOPIC_ID | 0不指定话题；正整数为message_thread_id |
 | TG_ADMIN_ID | 收到首次未开通玩家通知的个人正整数ID，可不填 |
 | TG_SUPPORT_USERNAME | 私聊联系管理员的用户名，可不填 |
 

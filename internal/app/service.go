@@ -371,7 +371,7 @@ func (s *Service) State() (any, error) {
 		if botRow != nil {
 			botStatus = botRow["value"]
 		}
-		out = map[string]any{"bot_status": botStatus, "suggested_number": TodayNumber(), "version": Version, "rules_version": v, "rules": r, "active_round": active, "accounts": accounts, "bets": bs, "outbox_unsent": count.Int("n"), "server_time": now(), "sqlite_version": sqlite.Version(), "telegram_configured": s.Config.BotUsername != "", "group_id": s.Config.GroupID, "topic_id": s.Config.TopicID}
+		out = map[string]any{"bot_status": botStatus, "suggested_number": TodayNumber(), "version": Version, "rules_version": v, "rules": r, "active_round": active, "accounts": accounts, "bets": bs, "outbox_unsent": count.Int("n"), "server_time": now(), "sqlite_version": sqlite.Version(), "telegram_configured": s.Config.BotUsername != "", "group_id": s.Config.GroupID}
 		return nil
 	})
 	return out, e

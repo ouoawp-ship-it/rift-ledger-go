@@ -94,18 +94,15 @@ func run() error {
 	if cfg.GroupID, e = envID("TG_GROUP_ID"); e != nil {
 		return e
 	}
-	if cfg.TopicID, e = envID("TG_TOPIC_ID"); e != nil {
-		return e
-	}
 	if cfg.NotifyAdminID, e = envID("TG_ADMIN_ID"); e != nil {
 		return e
 	}
-	settings, e := runtimeconfig.Open(filepath.Join(dir, "runtime-settings.json"), runtimeconfig.Config{Token: os.Getenv("TG_BOT_TOKEN"), BotUsername: cfg.BotUsername, GroupID: cfg.GroupID, TopicID: cfg.TopicID, AdminID: cfg.NotifyAdminID, SupportUsername: cfg.SupportUsername, Enabled: os.Getenv("TG_BOT_TOKEN") != ""})
+	settings, e := runtimeconfig.Open(filepath.Join(dir, "runtime-settings.json"), runtimeconfig.Config{Token: os.Getenv("TG_BOT_TOKEN"), BotUsername: cfg.BotUsername, GroupID: cfg.GroupID, AdminID: cfg.NotifyAdminID, SupportUsername: cfg.SupportUsername, Enabled: os.Getenv("TG_BOT_TOKEN") != ""})
 	if e != nil {
 		return e
 	}
 	saved := settings.Current()
-	cfg = app.RuntimeConfig{BotUsername: saved.BotUsername, GroupID: saved.GroupID, TopicID: saved.TopicID, NotifyAdminID: saved.AdminID, SupportUsername: saved.SupportUsername}
+	cfg = app.RuntimeConfig{BotUsername: saved.BotUsername, GroupID: saved.GroupID, NotifyAdminID: saved.AdminID, SupportUsername: saved.SupportUsername}
 	botToken := saved.Token
 	if !saved.Enabled {
 		botToken = ""

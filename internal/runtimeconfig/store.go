@@ -16,7 +16,6 @@ type Config struct {
 	Token           string `json:"token"`
 	BotUsername     string `json:"bot_username"`
 	GroupID         int64  `json:"group_id"`
-	TopicID         int64  `json:"topic_id"`
 	AdminID         int64  `json:"admin_id"`
 	SupportUsername string `json:"support_username"`
 	Enabled         bool   `json:"enabled"`
@@ -27,7 +26,6 @@ type Patch struct {
 	Token           string `json:"token"`
 	BotUsername     string `json:"bot_username"`
 	GroupID         int64  `json:"group_id"`
-	TopicID         int64  `json:"topic_id"`
 	AdminID         int64  `json:"admin_id"`
 	SupportUsername string `json:"support_username"`
 	Enabled         bool   `json:"enabled"`
@@ -72,11 +70,8 @@ func Validate(c Config) error {
 	if c.Enabled && (c.Token == "" || c.BotUsername == "") {
 		return errors.New("启用Telegram必须填写Token和机器人用户名")
 	}
-	if c.GroupID > 0 || c.GroupID < -4503599627370495 || c.TopicID < 0 || c.TopicID > 2147483647 || c.AdminID < 0 || c.AdminID > 4503599627370495 {
-		return errors.New("群ID必须为负整数；话题及管理员ID必须为有效非负整数")
-	}
-	if c.TopicID != 0 && c.GroupID == 0 {
-		return errors.New("话题ID需要同时配置群ID")
+	if c.GroupID > 0 || c.GroupID < -4503599627370495 || c.AdminID < 0 || c.AdminID > 4503599627370495 {
+		return errors.New("群ID必须为负整数；管理员ID必须为有效非负整数")
 	}
 	return nil
 }
@@ -89,7 +84,7 @@ func (s *Store) View() map[string]any {
 	if c.Token != "" {
 		mask = "******"
 	}
-	return map[string]any{"token_mask": mask, "bot_username": c.BotUsername, "group_id": c.GroupID, "topic_id": c.TopicID, "admin_id": c.AdminID, "support_username": c.SupportUsername, "enabled": c.Enabled, "active_enabled": s.active.Enabled, "revision": c.Revision, "saved_at": c.SavedAt, "restart_required": c != s.active, "active": map[string]any{"bot_username": s.active.BotUsername, "group_id": s.active.GroupID, "topic_id": s.active.TopicID, "admin_id": s.active.AdminID, "support_username": s.active.SupportUsername}}
+	return map[string]any{"token_mask": mask, "bot_username": c.BotUsername, "group_id": c.GroupID, "admin_id": c.AdminID, "support_username": c.SupportUsername, "enabled": c.Enabled, "active_enabled": s.active.Enabled, "revision": c.Revision, "saved_at": c.SavedAt, "restart_required": c != s.active, "active": map[string]any{"bot_username": s.active.BotUsername, "group_id": s.active.GroupID, "admin_id": s.active.AdminID, "support_username": s.active.SupportUsername}}
 }
 func (s *Store) Save(p Patch) error {
 	s.mu.Lock()
@@ -101,7 +96,7 @@ func (s *Store) Save(p Patch) error {
 	if token == "" {
 		token = s.saved.Token
 	}
-	c := Config{Token: token, BotUsername: strings.TrimPrefix(strings.TrimSpace(p.BotUsername), "@"), GroupID: p.GroupID, TopicID: p.TopicID, AdminID: p.AdminID, SupportUsername: strings.TrimPrefix(strings.TrimSpace(p.SupportUsername), "@"), Enabled: p.Enabled, Revision: s.saved.Revision + 1, SavedAt: time.Now().Unix()}
+	c := Config{Token: token, BotUsername: strings.TrimPrefix(strings.TrimSpace(p.BotUsername), "@"), GroupID: p.GroupID, AdminID: p.AdminID, SupportUsername: strings.TrimPrefix(strings.TrimSpace(p.SupportUsername), "@"), Enabled: p.Enabled, Revision: s.saved.Revision + 1, SavedAt: time.Now().Unix()}
 	if e := Validate(c); e != nil {
 		return e
 	}

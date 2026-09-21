@@ -32,7 +32,7 @@ func svc(t *testing.T) *app.Service {
 }
 func queue(t *testing.T, s *app.Service, key, card string) {
 	t.Helper()
-	payload := `{"chat_id":123,"message_thread_id":7,"text":"测试卡片"}`
+	payload := `{"chat_id":123,"text":"测试卡片"}`
 	if _, e := s.DB.Exec("INSERT INTO outbox(key,chat_id,card_key,payload,created_at) VALUES(?,123,?,?,1)", key, card, payload); e != nil {
 		t.Fatal(e)
 	}
@@ -54,8 +54,11 @@ func TestSendAndEditSameCard(t *testing.T) {
 		var payload map[string]any
 		json.NewDecoder(r.Body).Decode(&payload)
 		if calls == 1 {
-			if !strings.HasSuffix(r.URL.Path, "sendMessage") || payload["message_thread_id"] != float64(7) {
+			if !strings.HasSuffix(r.URL.Path, "sendMessage") {
 				t.Error("send payload")
+			}
+			if _, ok := payload["message_thread_id"]; ok {
+				t.Error("topic field should not be sent")
 			}
 		} else {
 			if !strings.HasSuffix(r.URL.Path, "editMessageText") || payload["message_id"] != float64(42) {

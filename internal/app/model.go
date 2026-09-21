@@ -191,7 +191,6 @@ type Preview struct {
 }
 type RuntimeConfig struct {
 	GroupID         int64
-	TopicID         int64
 	NotifyAdminID   int64
 	BotUsername     string
 	SupportUsername string

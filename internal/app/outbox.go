@@ -20,7 +20,6 @@ type Keyboard struct {
 type MessagePayload struct {
 	Media    []MediaPhoto `json:"media,omitempty"`
 	ChatID   int64        `json:"chat_id"`
-	ThreadID int64        `json:"message_thread_id,omitempty"`
 	Text     string       `json:"text"`
 	Markup   *Keyboard    `json:"reply_markup,omitempty"`
 }
@@ -40,7 +39,7 @@ func (s *Service) queueHeroes(tx *sqlite.Tx, r Round) error {
 		return nil
 	}
 	snapshot := s.Champions.View()
-	p := MessagePayload{ChatID: s.Config.GroupID, ThreadID: s.Config.TopicID, Text: fmt.Sprintf("峡谷账房｜%s期\n开始答题：仅机器人私聊受理，封盘后仅可查询。\n", r.Number)}
+	p := MessagePayload{ChatID: s.Config.GroupID, Text: fmt.Sprintf("峡谷账房｜%s期\n开始答题：仅机器人私聊受理，封盘后仅可查询。\n", r.Number)}
 	for i, h := range r.Heroes {
 		mark := " [闲]"
 		if i+1 == r.Banker {
@@ -72,7 +71,6 @@ func (s *Service) queue(tx *sqlite.Tx, key string, chat int64, cardKey, text str
 	}
 	p := MessagePayload{ChatID: chat, Text: text}
 	if chat == s.Config.GroupID {
-		p.ThreadID = s.Config.TopicID
 		if groupButtons && s.Config.BotUsername != "" {
 			base := "https://t.me/" + s.Config.BotUsername
 			p.Markup = &Keyboard{Rows: [][]Button{{{Text: "私聊下注", URL: base + "?start=bet"}, {Text: "个人中心", URL: base + "?start=home"}}, {{Text: "历史开奖", URL: base + "?start=history"}, {Text: "我的注单", URL: base + "?start=bets"}}}}
