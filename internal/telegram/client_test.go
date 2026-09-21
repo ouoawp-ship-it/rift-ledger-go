@@ -173,7 +173,7 @@ func TestConnectionRetryPolicy(t *testing.T) {
 		err  error
 		want time.Duration
 	}{
-		{&connectionError{"timeout"}, 5 * time.Second},
+		{&connectionError{message: "timeout"}, 5 * time.Second},
 		{&APIError{Code: 503}, 5 * time.Second},
 		{&APIError{Code: 429, RetryAfter: 30}, 30 * time.Second},
 		{&APIError{Code: 401}, 0},

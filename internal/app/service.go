@@ -111,7 +111,10 @@ func (s *Service) Command(key, action string, payload any, fn func(*sqlite.Tx) (
 		if e != nil {
 			return e
 		}
-		result = []byte(asJSON(obj))
+		result, e = json.Marshal(obj)
+		if e != nil {
+			return fmt.Errorf("command response encoding failed: %w", e)
+		}
 		if _, e = tx.Exec("INSERT INTO idempotency(key,fingerprint,response,created_at) VALUES(?,?,?,?)", key, hash, string(result), now()); e != nil {
 			return e
 		}

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -11,10 +12,12 @@ import (
 const botStatusMaxAge int64 = 75
 
 type BotConnection struct {
-	State     string `json:"state"`
-	Message   string `json:"message"`
-	UpdatedAt int64  `json:"updated_at"`
-	CheckedAt int64  `json:"checked_at"`
+	State       string `json:"state"`
+	Message     string `json:"message"`
+	UpdatedAt   int64  `json:"updated_at"`
+	CheckedAt   int64  `json:"checked_at"`
+	Pending     int64  `json:"pending"`
+	NeedsReview int64  `json:"needs_review"`
 }
 
 // Read the running receiver's status, not saved settings or a one-off getMe test.
@@ -30,6 +33,17 @@ func (s *Service) BotConnection() (BotConnection, error) {
 				status.Message = row["value"]
 			} else {
 				status.UpdatedAt, _ = strconv.ParseInt(row["value"], 10, 64)
+			}
+		}
+		counts, e := tx.Query("SELECT state,COUNT(*) AS n FROM outbox WHERE state IN ('PENDING','FAILED','UNKNOWN') GROUP BY state")
+		if e != nil {
+			return e
+		}
+		for _, row := range counts {
+			if row["state"] == "PENDING" {
+				status.Pending += row.Int("n")
+			} else {
+				status.NeedsReview += row.Int("n")
 			}
 		}
 		return nil
@@ -51,6 +65,10 @@ func (s *Service) BotConnection() (BotConnection, error) {
 		(status.UpdatedAt <= 0 || status.CheckedAt-status.UpdatedAt > botStatusMaxAge || status.UpdatedAt > status.CheckedAt) {
 		status.State = "stale"
 		status.Message = "机器人连接状态已超时，等待接收器恢复"
+	}
+	if status.State == "online" && status.NeedsReview > 0 {
+		status.State = "degraded"
+		status.Message += fmt.Sprintf("｜发送队列有%d条失败或待核实、%d条待发送，请打开发送记录处理", status.NeedsReview, status.Pending)
 	}
 	return status, nil
 }

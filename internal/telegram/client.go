@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"riftledger/internal/app"
@@ -22,6 +23,7 @@ type Client struct {
 	Token   string
 	BaseURL string
 	HTTP    *http.Client
+	paced   bool
 }
 type APIError struct {
 	Code        int
@@ -30,8 +32,31 @@ type APIError struct {
 }
 
 // Network and incomplete response failures can be retried during read-only startup.
-type connectionError struct{ message string }
+type connectionError struct {
+	message string
+	unsent  bool
+}
 
+func requestNetworkError(method string, err error) error {
+	var dns *net.DNSError
+	var op *net.OpError
+	unsent := errors.As(err, &dns) || (errors.As(err, &op) && op.Op == "dial")
+	return &connectionError{message: fmt.Sprintf("Telegram %s 网络请求失败（%s）", method, networkReason(err)), unsent: unsent}
+}
+func retryUnsent(err error, attempt int64) (int64, bool) {
+	var network *connectionError
+	if !errors.As(err, &network) || !network.unsent {
+		return 0, false
+	}
+	delay := int64(5)
+	for i := int64(1); i < attempt && delay < 60; i++ {
+		delay *= 2
+	}
+	if delay > 60 {
+		delay = 60
+	}
+	return delay, true
+}
 func (e *connectionError) Error() string { return e.message }
 
 func ConnectionRetryDelay(err error) (time.Duration, bool) {
@@ -94,15 +119,18 @@ func (c *Client) Call(ctx context.Context, method string, payload any, result an
 	req.Header.Set("Content-Type", "application/json")
 	resp, e := c.HTTP.Do(req)
 	if e != nil {
-		return &connectionError{fmt.Sprintf("Telegram %s 网络请求失败（%s）", method, networkReason(e))}
+		return requestNetworkError(method, e)
 	}
+	return c.decodeResponse(resp, result)
+}
+func (c *Client) decodeResponse(resp *http.Response, result any) error {
 	defer resp.Body.Close()
 	raw, e := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
 	if e != nil {
-		return &connectionError{"Telegram响应读取失败，结果未知"}
+		return &connectionError{message: "Telegram响应读取失败，结果未知"}
 	}
 	var envelope struct {
-		OK          bool            `json:"ok"`
+		OK          *bool           `json:"ok"`
 		Result      json.RawMessage `json:"result"`
 		Code        int             `json:"error_code"`
 		Description string          `json:"description"`
@@ -111,9 +139,12 @@ func (c *Client) Call(ctx context.Context, method string, payload any, result an
 		} `json:"parameters"`
 	}
 	if e = json.Unmarshal(raw, &envelope); e != nil {
-		return &connectionError{"Telegram响应格式异常，结果未知"}
+		return &connectionError{message: "Telegram响应格式异常，结果未知"}
 	}
-	if !envelope.OK {
+	if envelope.OK == nil {
+		return &connectionError{message: "Telegram响应缺少状态，结果未知"}
+	}
+	if !*envelope.OK {
 		code := envelope.Code
 		if code == 0 {
 			code = resp.StatusCode
@@ -121,10 +152,16 @@ func (c *Client) Call(ctx context.Context, method string, payload any, result an
 		return &APIError{code, strings.ReplaceAll(envelope.Description, c.Token, "[已隐藏]"), envelope.Parameters.RetryAfter}
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return errors.New("Telegram响应状态异常，结果未知")
+		return &connectionError{message: "Telegram响应状态异常，结果未知"}
 	}
 	if result != nil {
-		return json.Unmarshal(envelope.Result, result)
+		if len(envelope.Result) == 0 || bytes.Equal(bytes.TrimSpace(envelope.Result), []byte("null")) {
+			return &connectionError{message: "Telegram响应缺少结果，结果未知"}
+		}
+		if err := json.Unmarshal(envelope.Result, result); err != nil {
+			return &connectionError{message: "Telegram结果格式异常，结果未知"}
+		}
+		return nil
 	}
 	return nil
 }
@@ -167,7 +204,17 @@ func (c *Client) Run(ctx context.Context, s *app.Service) error {
 	senderCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	done := make(chan struct{})
-	go func() { defer close(done); c.sendLoop(senderCtx, s) }()
+	go func() {
+		defer close(done)
+		sender := *c
+		sender.paced = true
+		var workers sync.WaitGroup
+		for i := 0; i < 4; i++ {
+			workers.Add(1)
+			go func() { defer workers.Done(); sender.sendLoop(senderCtx, s) }()
+		}
+		workers.Wait()
+	}()
 	defer func() { cancel(); <-done }()
 	_ = s.BotStatus("已连接 @" + me.Username)
 	for ctx.Err() == nil {
@@ -186,7 +233,12 @@ func (c *Client) Run(ctx context.Context, s *app.Service) error {
 				return e
 			}
 			_ = s.BotStatus("接收异常，将重试：" + e.Error())
-			if !wait(ctx, 3*time.Second) {
+			delay, retry := ConnectionRetryDelay(e)
+			if !retry {
+				return e
+			}
+			slog.Warn("Telegram轮询失败，自动重试", "error", e, "retry_seconds", delay.Seconds())
+			if !wait(ctx, delay) {
 				return nil
 			}
 			continue
@@ -208,10 +260,17 @@ func (c *Client) Run(ctx context.Context, s *app.Service) error {
 	return nil
 }
 func (c *Client) SendOne(ctx context.Context, s *app.Service) (bool, error) {
+	if ctx.Err() != nil {
+		return false, ctx.Err()
+	}
 	item, e := s.ClaimOutbox()
 	if e != nil || item == nil {
 		return false, e
 	}
+	// Let an already claimed request finish during a graceful process restart.
+	sendCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
+	defer cancel()
+	ctx = sendCtx
 	if len(item.Payload.Media) > 0 {
 		return c.sendMedia(ctx, s, *item)
 	}
@@ -233,6 +292,9 @@ func (c *Client) SendOne(ctx context.Context, s *app.Service) (bool, error) {
 	if e != nil {
 		state = "UNKNOWN"
 		detail = e.Error()
+		if delay, safe := retryUnsent(e, item.Attempts); safe {
+			state, retry = "PENDING", delay
+		}
 		var ae *APIError
 		if errors.As(e, &ae) {
 			if ae.Code == 400 && strings.Contains(strings.ToLower(ae.Description), "message is not modified") && item.CardMessageID > 0 {
@@ -252,6 +314,15 @@ func (c *Client) SendOne(ctx context.Context, s *app.Service) (bool, error) {
 	} else if id <= 0 {
 		state = "UNKNOWN"
 		detail = "成功响应没有message_id，请核实送达"
+	}
+	if state == "SENT" && c.paced {
+		retry = 1
+		if item.Payload.ChatID < 0 {
+			retry = 3
+		}
+	}
+	if e != nil {
+		slog.Warn("Telegram发送状态", "outbox_id", item.ID, "state", state, "detail", detail)
 	}
 	// Use a fresh local transaction even if the network request's context was canceled.
 	if err := s.CompleteOutbox(*item, state, id, detail, retry); err != nil {
@@ -275,19 +346,19 @@ func (c *Client) sendLoop(ctx context.Context, s *app.Service) {
 	}
 }
 
-// Albums use cached official PNGs; never fetch Riot data inside a ledger transaction.
+// The five heroes are composed into ONE image: Telegram sendPhoto accepts it;
+// sendMediaGroup requires 2–10 media items and rejects this payload.
 func (c *Client) sendMedia(ctx context.Context, s *app.Service, item app.OutboxItem) (bool, error) {
-	var result []struct {
+	var result struct {
 		MessageID int64 `json:"message_id"`
 	}
 	var e error
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
-	media := []map[string]string{}
 	if len(item.Payload.Media) != 5 || s.Champions == nil {
 		e = errors.New("英雄缓存不可用")
 	} else {
-		photos := make([][]byte, 0, len(item.Payload.Media))
+		photos := make([][]byte, 0, 5)
 		for _, p := range item.Payload.Media {
 			var data []byte
 			data, e = s.Champions.Image(p.Version, p.ID)
@@ -300,61 +371,47 @@ func (c *Client) sendMedia(ctx context.Context, s *app.Service, item app.OutboxI
 			var composite []byte
 			composite, e = composeHeroImage(photos, item.Payload.Media)
 			if e == nil {
-				part, createErr := writer.CreateFormFile("photo", "heroes.png")
-				e = createErr
+				var part io.Writer
+				part, e = writer.CreateFormFile("photo", "heroes.png")
 				if e == nil {
 					_, e = part.Write(composite)
 				}
-			}
-			if e == nil {
-				media = append(media, map[string]string{"type": "photo", "media": "attach://photo", "caption": item.Payload.Text})
 			}
 		}
 	}
 	localFailure := e != nil
 	if e == nil {
-		raw, _ := json.Marshal(media)
-		_ = writer.WriteField("media", string(raw))
+		_ = writer.WriteField("caption", item.Payload.Text)
 		_ = writer.WriteField("chat_id", fmt.Sprint(item.Payload.ChatID))
 		_ = writer.Close()
 		var req *http.Request
-		req, e = http.NewRequestWithContext(ctx, "POST", c.BaseURL+"/bot"+c.Token+"/sendMediaGroup", &body)
+		req, e = http.NewRequestWithContext(ctx, "POST", c.BaseURL+"/bot"+c.Token+"/sendPhoto", &body)
 		if e == nil {
 			req.Header.Set("Content-Type", writer.FormDataContentType())
-			var res *http.Response
-			res, e = c.HTTP.Do(req)
-			if e == nil {
-				var envelope struct {
-					OK         bool            `json:"ok"`
-					Code       int             `json:"error_code"`
-					Result     json.RawMessage `json:"result"`
-					Parameters struct {
-						RetryAfter int64 `json:"retry_after"`
-					} `json:"parameters"`
-				}
-				err := json.NewDecoder(io.LimitReader(res.Body, 2<<20)).Decode(&envelope)
-				res.Body.Close()
-				if err != nil {
-					e = errors.New("媒体响应格式异常")
-				} else if !envelope.OK {
-					e = &APIError{Code: envelope.Code, Description: "英雄媒体发送失败", RetryAfter: envelope.Parameters.RetryAfter}
-				} else {
-					e = json.Unmarshal(envelope.Result, &result)
-				}
+			var resp *http.Response
+			resp, e = c.HTTP.Do(req)
+			if e != nil {
+				e = requestNetworkError("sendPhoto", e)
+			} else {
+				e = c.decodeResponse(resp, &result)
 			}
+		} else {
+			e = errors.New("无法构造图片请求")
 		}
 	}
-	if e == nil && len(result) == 1 {
-		valid := true
-		for _, r := range result {
-			if r.MessageID <= 0 {
-				valid = false
+	if e == nil && result.MessageID > 0 {
+		raw, _ := json.Marshal([]any{result})
+		cooldown := int64(0)
+		if c.paced {
+			cooldown = 1
+			if item.Payload.ChatID < 0 {
+				cooldown = 3
 			}
 		}
-		if valid {
-			raw, _ := json.Marshal(result)
-			return true, s.CompleteMedia(item, "SENT", result[0].MessageID, "", string(raw), 0)
-		}
+		return true, s.CompleteMedia(item, "SENT", result.MessageID, "", string(raw), cooldown)
+	}
+	if delay, safe := retryUnsent(e, item.Attempts); safe {
+		return true, s.CompleteMedia(item, "PENDING", 0, e.Error(), "", delay)
 	}
 	var ae *APIError
 	if errors.As(e, &ae) && ae.Code == 429 {
@@ -362,15 +419,17 @@ func (c *Client) sendMedia(ctx context.Context, s *app.Service, item app.OutboxI
 		if retry < 1 {
 			retry = 5
 		}
-		return true, s.CompleteMedia(item, "PENDING", 0, "媒体发送限流", "", retry)
+		return true, s.CompleteMedia(item, "PENDING", 0, "图片发送限流", "", retry)
 	}
-	// The main editable text card precedes this task. Unknown network delivery is
-	// not retried automatically; a distinct text fallback does not duplicate an album.
-	detail := "媒体发送结果未知；已排队纯文字公告，请核实媒体是否送达"
+	detail := "图片发送结果未知；已排队纯文字公告，请核实图片是否送达"
 	state := "UNKNOWN"
 	if localFailure || (errors.As(e, &ae) && ae.Code >= 400 && ae.Code < 500) {
 		state = "FAILED"
-		detail = "媒体发送失败，已降级纯文字公告"
+		detail = "图片发送失败，已降级纯文字公告"
 	}
+	if ae != nil {
+		detail += "：" + ae.Error()
+	}
+	slog.Warn("Telegram图片降级", "outbox_id", item.ID, "state", state, "detail", detail)
 	return true, s.FallbackMedia(item, state, detail)
 }

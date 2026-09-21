@@ -89,14 +89,21 @@ func (s *Store) View() map[string]any {
 func (s *Store) Save(p Patch) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if p.Revision != s.saved.Revision {
-		return errors.New("配置已被修改，请刷新后再保存")
-	}
 	token := p.Token
 	if token == "" {
 		token = s.saved.Token
 	}
 	c := Config{Token: token, BotUsername: strings.TrimPrefix(strings.TrimSpace(p.BotUsername), "@"), GroupID: p.GroupID, AdminID: p.AdminID, SupportUsername: strings.TrimPrefix(strings.TrimSpace(p.SupportUsername), "@"), Enabled: p.Enabled, Revision: s.saved.Revision + 1, SavedAt: time.Now().Unix()}
+	compare := c
+	compare.Revision, compare.SavedAt = s.saved.Revision, s.saved.SavedAt
+	// A lost save response can be retried without erasing the form or restarting
+	// again. A genuinely stale/different edit still receives a conflict.
+	if compare == s.saved && (p.Revision == s.saved.Revision || p.Revision == s.saved.Revision-1) {
+		return nil
+	}
+	if p.Revision != s.saved.Revision {
+		return errors.New("配置已被修改，请刷新后再保存")
+	}
 	if e := Validate(c); e != nil {
 		return e
 	}

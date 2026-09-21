@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
 	"embed"
@@ -14,6 +15,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"riftledger/internal/app"
@@ -27,9 +29,10 @@ import (
 var assets embed.FS
 
 type API struct {
-	Service   *app.Service
-	tokenHash [32]byte
-	restart   func()
+	Service    *app.Service
+	tokenHash  [32]byte
+	restart    func()
+	restarting atomic.Bool
 }
 
 func New(s *app.Service, token string) http.Handler {
@@ -59,6 +62,14 @@ func newAPI(s *app.Service, token string, restart func()) http.Handler {
 	sub, _ := fs.Sub(assets, "web")
 	mux.Handle("/", http.FileServer(http.FS(sub)))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := fmt.Sprintf("%x", randomRequestID())
+		w.Header().Set("X-Request-ID", id)
+		started := time.Now()
+		defer func() {
+			if time.Since(started) > 5*time.Second {
+				slog.Warn("HTTP慢请求", "request_id", id, "method", r.Method, "path", r.URL.Path, "elapsed_ms", time.Since(started).Milliseconds())
+			}
+		}()
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("X-Frame-Options", "DENY")
@@ -66,12 +77,17 @@ func newAPI(s *app.Service, token string, restart func()) http.Handler {
 		w.Header().Set("Cache-Control", "no-store")
 		defer func() {
 			if v := recover(); v != nil {
-				slog.Error("HTTP处理异常")
+				slog.Error("HTTP处理异常", "request_id", id, "path", r.URL.Path)
 				a.respond(w, nil, fmt.Errorf("internal panic"))
 			}
 		}()
 		mux.ServeHTTP(w, r)
 	})
+}
+func randomRequestID() []byte {
+	b := make([]byte, 12)
+	_, _ = rand.Read(b)
+	return b
 }
 func (a *API) auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -97,16 +113,27 @@ func (a *API) auth(next http.Handler) http.Handler {
 }
 func (a *API) respond(w http.ResponseWriter, data any, e error) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	code := http.StatusOK
+	body := map[string]any{"ok": true, "data": data}
 	if e != nil {
-		code, msg := app.PublicError(e)
+		var msg string
+		code, msg = app.PublicError(e)
 		if code == 500 {
-			slog.Error("API内部错误（详细参数已隐藏）")
+			slog.Error("API内部错误（详细参数已隐藏）", "request_id", w.Header().Get("X-Request-ID"))
 		}
-		w.WriteHeader(code)
-		_ = json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": msg})
-		return
+		body = map[string]any{"ok": false, "error": msg}
 	}
-	_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "data": data})
+	// Encode before sending headers; encoding failures must never become empty 200s.
+	raw, err := json.Marshal(body)
+	if err != nil {
+		code = http.StatusInternalServerError
+		raw = []byte(`{"ok":false,"error":"响应编码失败，请凭请求编号核实操作结果"}`)
+		slog.Error("API响应编码失败", "request_id", w.Header().Get("X-Request-ID"))
+	}
+	w.WriteHeader(code)
+	if _, err = w.Write(raw); err != nil {
+		slog.Warn("API响应写入失败", "request_id", w.Header().Get("X-Request-ID"), "status", code)
+	}
 }
 func decode(w http.ResponseWriter, r *http.Request, v any) error {
 	mediatype, _, e := mime.ParseMediaType(r.Header.Get("Content-Type"))
@@ -214,7 +241,8 @@ func (a *API) route(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		a.respond(w, s.Settings.View(), nil)
-		if a.restart != nil {
+		if a.restart != nil && s.Settings.View()["restart_required"] == true && a.restarting.CompareAndSwap(false, true) {
+			_ = http.NewResponseController(w).Flush()
 			go func() {
 				// Allow net/http to flush the successful response before the
 				// process manager stops this process.
@@ -233,7 +261,12 @@ func (a *API) route(w http.ResponseWriter, r *http.Request) {
 			a.respond(w, nil, &app.Fault{Code: 503, Message: "当前运行方式不支持网页重启，请重启服务进程"})
 			return
 		}
+		if !a.restarting.CompareAndSwap(false, true) {
+			a.respond(w, map[string]any{"restarting": true}, nil)
+			return
+		}
 		a.respond(w, map[string]any{"restarting": true}, nil)
+		_ = http.NewResponseController(w).Flush()
 		go func() {
 			time.Sleep(100 * time.Millisecond)
 			a.restart()
@@ -287,12 +320,8 @@ func (a *API) route(w http.ResponseWriter, r *http.Request) {
 			a.respond(w, nil, &app.Fault{Code: 503, Message: "英雄服务未初始化"})
 			return
 		}
-		v, e := s.Champions.Refresh(r.Context())
-		if e != nil {
-			a.respond(w, nil, &app.Fault{Code: 502, Message: "刷新失败，原缓存保留，请检查Riot网络连接后重试"})
-			return
-		}
-		a.respond(w, v, nil)
+		s.Champions.StartRefresh()
+		a.respond(w, s.Champions.View(), nil)
 		return
 	case "api/balance-requests/resolve":
 		var in struct {

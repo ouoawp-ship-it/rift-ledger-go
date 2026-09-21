@@ -24,6 +24,8 @@ var schema = []string{
 	`CREATE TABLE IF NOT EXISTS cards (key TEXT PRIMARY KEY,message_id INTEGER NOT NULL)`,
 	`CREATE TABLE IF NOT EXISTS outbox (id INTEGER PRIMARY KEY AUTOINCREMENT,key TEXT NOT NULL UNIQUE,chat_id INTEGER NOT NULL,card_key TEXT NOT NULL DEFAULT '',payload TEXT NOT NULL,state TEXT NOT NULL DEFAULT 'PENDING' CHECK(state IN ('PENDING','INFLIGHT','SENT','FAILED','UNKNOWN')),attempts INTEGER NOT NULL DEFAULT 0,next_at INTEGER NOT NULL DEFAULT 0,last_error TEXT NOT NULL DEFAULT '',message_id INTEGER NOT NULL DEFAULT 0,created_at INTEGER NOT NULL)`,
 	`CREATE INDEX IF NOT EXISTS outbox_pending ON outbox(state,next_at,id)`,
+	`CREATE INDEX IF NOT EXISTS outbox_chat_blocking ON outbox(chat_id,id) WHERE state!='SENT'`,
+	`CREATE INDEX IF NOT EXISTS outbox_chat_cooldown ON outbox(chat_id,next_at) WHERE state='SENT'`,
 }
 
 func initialize(db *sqlite.DB) error {

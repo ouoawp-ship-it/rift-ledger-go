@@ -26,10 +26,11 @@ type Champion struct {
 	CachePath   string `json:"cache_path"`
 }
 type Snapshot struct {
-	Version   string     `json:"version"`
-	UpdatedAt int64      `json:"updated_at"`
-	Champions []Champion `json:"champions"`
-	Status    string     `json:"status"`
+	Refreshing bool       `json:"refreshing"`
+	Version    string     `json:"version"`
+	UpdatedAt  int64      `json:"updated_at"`
+	Champions  []Champion `json:"champions"`
+	Status     string     `json:"status"`
 }
 type ChampionService struct {
 	mu           sync.RWMutex
@@ -37,6 +38,7 @@ type ChampionService struct {
 	Dir, BaseURL string
 	HTTP         *http.Client
 	snapshot     Snapshot
+	refreshing   bool
 }
 
 var safeID = regexp.MustCompile(`^[A-Za-z0-9]+$`)
@@ -61,6 +63,7 @@ func (s *ChampionService) View() Snapshot {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	v := s.snapshot
+	v.Refreshing = s.refreshing
 	v.Champions = append([]Champion{}, v.Champions...)
 	return v
 }
@@ -102,6 +105,28 @@ func (s *ChampionService) Refresh(ctx context.Context) (Snapshot, error) {
 		return s.View(), errors.New("英雄数据正在刷新")
 	}
 	defer s.refresh.Unlock()
+	return s.refreshLocked(ctx)
+}
+
+// Repeated clicks join one bounded job, independent of browser/proxy timeouts.
+func (s *ChampionService) StartRefresh() {
+	if !s.refresh.TryLock() {
+		return
+	}
+	s.mu.Lock()
+	s.refreshing = true
+	s.snapshot.Status = "正在后台刷新英雄数据"
+	s.mu.Unlock()
+	go func() {
+		defer s.refresh.Unlock()
+		defer func() { s.mu.Lock(); s.refreshing = false; s.mu.Unlock() }()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		_, _ = s.refreshLocked(ctx)
+	}()
+}
+
+func (s *ChampionService) refreshLocked(ctx context.Context) (Snapshot, error) {
 	snap, e := s.download(ctx)
 	if e != nil {
 		s.mu.Lock()
@@ -111,6 +136,9 @@ func (s *ChampionService) Refresh(ctx context.Context) (Snapshot, error) {
 	}
 	b, _ := json.Marshal(snap)
 	if e = runtimeconfig.AtomicWrite(filepath.Join(s.Dir, "champions.json"), b); e != nil {
+		s.mu.Lock()
+		s.snapshot.Status = "缓存保存失败，保留原英雄数据"
+		s.mu.Unlock()
 		return s.View(), e
 	}
 	s.mu.Lock()
@@ -119,6 +147,8 @@ func (s *ChampionService) Refresh(ctx context.Context) (Snapshot, error) {
 	return s.View(), nil
 }
 func (s *ChampionService) download(ctx context.Context) (Snapshot, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	empty := Snapshot{}
 	b, e := s.get(ctx, "/api/versions.json")
 	if e != nil {
@@ -170,6 +200,9 @@ func (s *ChampionService) download(ctx context.Context) (Snapshot, error) {
 		go func() {
 			defer wg.Done()
 			for c := range jobs {
+				if ctx.Err() != nil {
+					return
+				}
 				path := filepath.Join(s.Dir, c.CachePath)
 				if b, e := os.ReadFile(path); e == nil && validPNG(b) {
 					continue
@@ -183,6 +216,8 @@ func (s *ChampionService) download(ctx context.Context) (Snapshot, error) {
 				}
 				if e != nil {
 					errs <- e
+					cancel()
+					return
 				}
 			}
 		}()
@@ -190,6 +225,9 @@ func (s *ChampionService) download(ctx context.Context) (Snapshot, error) {
 	wg.Wait()
 	close(errs)
 	for e := range errs {
+		return empty, e
+	}
+	if e := ctx.Err(); e != nil {
 		return empty, e
 	}
 	sort.Slice(snap.Champions, func(i, j int) bool { return snap.Champions[i].ID < snap.Champions[j].ID })

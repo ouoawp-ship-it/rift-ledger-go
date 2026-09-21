@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>峡谷账房 · Go 服务端</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script><script src="/bot-connection.js" defer></script></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>峡谷账房 · Go 服务端</title><link rel="stylesheet" href="/style.css"><script src="/api-client.js" defer></script><script src="/app.js" defer></script><script src="/bot-connection.js" defer></script></head>
 <body>
 <a class="skip-link" href="#workspace">跳到工作区</a>
 <header class="topbar"><div class="topbar-context"><span class="topbar-brand">峡谷账房</span><span class="topbar-divider">/</span><span id="current-page-name">管理工作台</span></div><div class="connection-group"><span id="connection">未连接</span><span id="bot-connection" class="bot-connection" data-state="unknown" role="status" aria-live="polite" aria-atomic="true"><span class="bot-connection-dot" aria-hidden="true"></span><span id="bot-connection-label">机器人状态待连接</span></span></div></header>
@@ -39,7 +39,7 @@
 <div class="page-heading"><div><div class="breadcrumb">管理工作台 <span>/</span> 赔率设置</div><h1>赔率设置</h1><p>设置盈利倍率和下注限额。</p></div></div>
 <div class="rules-shell">
 <div class="rules-fixed" role="note"><strong>固定规则</strong><p>三位数该英雄流局；四位数增加一个1；六位取后五位并保留零；同牛只比较最大数字，仍同则庄赢。庄家流局时整期流局。本版不增加炸弹牛、五小牛等特殊牌型。赔率支持0至100倍、最多两位小数，结算盈利按整数积分四舍五入。</p><p>闲家输仅扣本金1倍。玩家盈利按赔率直接增加余额，玩家亏损按本金扣减；不收取手续费。所有金额为整数账面积分。</p></div>
-<fieldset class="rules-card"><legend>赔率设置</legend><div class="rules-meta"><span>保存设置只影响之后开始的期次，不重算历史；0倍不产生盈利，盈利按倍率计算并四舍五入为整数积分。</span></div>
+<fieldset class="rules-card"><legend>赔率设置</legend>
 <form id="rules-form"><div class="rules-layout"><section class="odds-panel"><div class="panel-heading"><h3>闲家获胜净盈利倍数</h3></div><div id="odds-inputs" class="odds-grid"></div></section><section class="limits-panel"><h3>下注金额</h3><label class="setting-row">最低本金<input id="min-stake" type="number" min="1" max="1000000" required></label><label class="setting-row">最高本金<input id="max-stake" type="number" min="1" max="1000000" required></label><label class="setting-row">0＋0＋0能否成牛<select id="zero-triple" required><option value="">请选择</option><option value="true">允许</option><option value="false">不允许</option></select></label></section></div><div class="rules-actions"><button type="submit" class="primary-action">保存设置</button></div></form></fieldset>
 </div>
 </section>
@@ -58,20 +58,23 @@
 <section class="page" id="page-champions" hidden>
 <div class="page-heading"><div><div class="breadcrumb">管理工作台 <span>/</span> 英雄数据</div><h1>英雄数据</h1><p>管理官方英雄数据与头像缓存。</p></div></div><fieldset><legend>英雄数据</legend><div id="champion-status"></div><button id="champions-refresh">刷新官方英雄数据</button><input id="champion-search" placeholder="搜索中文或英文英雄名"><div id="champions-table" class="table-wrap"></div></fieldset></section>
 <section class="page" id="page-bot" hidden>
-<div class="page-heading"><div><div class="breadcrumb">系统管理 <span>/</span> Telegram</div><h1>机器人设置</h1><p>连接你的机器人，让公示、通知与玩家服务各就其位。</p></div><span class="integration-label">Telegram 集成</span></div>
-<div class="bot-layout"><form id="bot-form" class="settings-surface">
+<div class="page-heading"><div><div class="breadcrumb">系统管理 <span>/</span> Telegram</div><h1>机器人设置</h1><p>连接你的机器人，让公示、通知与玩家服务各就其位。</p></div><button type="button" id="bot-test">测试机器人连接 <span aria-hidden="true">↗</span></button></div>
+<div class="bot-metrics" aria-label="机器人运行概览">
+<section class="bot-metric" id="bot-connection-panel" data-state="unknown"><span class="metric-label">机器人接收</span><div class="metric-value"><span class="status-orb" aria-hidden="true"></span><h2 id="bot-panel-label">等待连接</h2></div><p id="bot-connection-detail">连接管理服务后自动检测</p><small id="bot-connection-time">每5秒自动更新</small></section>
+<section class="bot-metric"><span class="metric-label">发送队列</span><div class="metric-value" id="bot-queue-count">—</div><p id="bot-queue-detail">等待获取发送状态</p></section>
+<section class="bot-metric"><span class="metric-label">最近配置</span><div class="metric-value" id="bot-config-summary">等待读取</div><p id="bot-config-time">读取已保存的配置</p></section></div>
+<div class="bot-layout"><form id="bot-form" class="settings-surface"><div class="settings-title"><strong>连接配置</strong><small>按分组填写以下信息</small></div>
 <section class="settings-section"><div class="section-label"><span class="section-number">01</span><div><h2>机器人身份</h2><p>连接 Telegram 所需的身份信息</p></div></div><div class="section-fields">
 <label class="field"><span>Bot Token <em>密钥</em></span><input id="bot-token" type="password" autocomplete="off" placeholder="留空保留已保存的 Token" aria-describedby="bot-token-help"><small id="bot-token-help">从 BotFather 获取；已保存的密钥不会回填到页面。</small></label>
 <label class="field"><span>机器人用户名</span><div class="input-prefix"><span aria-hidden="true">@</span><input id="bot-username" placeholder="例如 yxlmKJbot" aria-describedby="bot-username-help"></div><small id="bot-username-help">填写机器人自己的用户名，不是管理员或客服用户名。</small></label>
 <label class="enable-row"><span><strong>启用 Telegram</strong><small>开启机器人消息接收与发送</small></span><input id="bot-enabled" type="checkbox" role="switch"></label>
 </div></section>
-<section class="settings-section"><div class="section-label"><span class="section-number">02</span><div><h2>群通知</h2><p>设置开奖和公示的发送位置</p></div></div><div class="section-fields"><label class="field"><span>群 ID</span><input id="bot-group" type="number" placeholder="例如 -1001234567890" aria-describedby="bot-group-help"><small id="bot-group-help">机器人发送开奖、公示消息的群组数字 ID。</small></label><p class="inline-note">请先将机器人加入目标群，并允许它发送消息。</p></div></section>
-<section class="settings-section"><div class="section-label"><span class="section-number">03</span><div><h2>管理员与客服</h2><p>分开设置通知接收人与玩家联系人</p></div></div><div class="section-fields"><label class="field"><span>管理员 TG ID</span><input id="bot-admin" type="number" placeholder="例如 8142380542" aria-describedby="bot-admin-help"><small id="bot-admin-help">管理员本人的数字 ID，用于接收上分、下分等后台通知。</small></label><label class="field"><span>客服用户名</span><div class="input-prefix"><span aria-hidden="true">@</span><input id="bot-support" placeholder="例如 pddpdd" aria-describedby="bot-support-help"></div><small id="bot-support-help">玩家要联系的客服用户名，无需填写 @，系统会自动处理。</small></label></div></section>
+<section class="settings-section"><div class="section-label"><span class="section-number">02</span><h2>消息与联系人</h2></div><div class="section-fields"><label class="field field-wide"><span>群 ID</span><input id="bot-group" type="number" placeholder="例如 -1001234567890" aria-describedby="bot-group-help"><small id="bot-group-help">机器人发送开奖、公示消息的群组数字 ID。</small></label><label class="field"><span>管理员 TG ID</span><input id="bot-admin" type="number" placeholder="例如 8142380542" aria-describedby="bot-admin-help"><small id="bot-admin-help">管理员本人的数字 ID，用于接收上分、下分等后台通知。</small></label><label class="field"><span>客服用户名</span><div class="input-prefix"><span aria-hidden="true">@</span><input id="bot-support" placeholder="例如 pddpdd" aria-describedby="bot-support-help"></div><small id="bot-support-help">玩家要联系的客服用户名，无需填写 @，系统会自动处理。</small></label></div></section>
 <div class="settings-save"><div><strong>保存并应用配置</strong><p>保存后服务自动重启，新设置随即生效。</p></div><button type="submit" class="primary-action">保存设置 <span aria-hidden="true">→</span></button></div><div id="bot-status" class="save-status" role="status"></div>
 </form><aside class="bot-aside" aria-label="连接与使用说明">
-<section class="connection-card" id="bot-connection-panel" data-state="unknown"><div class="aside-caption">连接监测 <span>LIVE</span></div><div class="connection-card-title"><span class="status-orb" aria-hidden="true"></span><h2 id="bot-panel-label">等待连接</h2></div><p id="bot-connection-detail">连接管理服务后自动检测</p><small id="bot-connection-time">每5秒自动更新</small><button type="button" id="bot-test">测试机器人连接 <span aria-hidden="true">↗</span></button></section>
-<section class="aside-section"><span class="aside-caption">使用提示</span><h3>管理员也可以是客服</h3><p>同一个人可以接收后台通知，也可以为玩家提供服务。两处分别填写他的数字 ID 和用户名即可。</p><div class="guide-divider"></div><h3>验证群消息</h3><p>保存设置后，可发送一条测试消息，确认公示群能够正常接收。</p><button type="button" id="bot-test-group">发送群测试消息 <span aria-hidden="true">↗</span></button><small>此操作会向已配置的群发送消息。</small></section>
-<details class="topic-note"><summary>关于 Topic ID</summary><p>话题功能已移除，无需填写 Topic ID。群通知只使用群 ID。</p></details>
+
+<section class="aside-section"><span class="aside-caption">配置指南</span><div class="help-block"><h3>先准备好机器人</h3><p>通过 BotFather 创建机器人，获取 Token，再将机器人加入公示群，并允许它发送消息。</p></div><h3>管理员也可以是客服</h3><p>同一个人可以接收后台通知，也可以为玩家提供服务。两处分别填写他的数字 ID 和用户名即可。</p><div class="guide-divider"></div><h3>验证群消息</h3><p>保存设置后，可发送一条测试消息，确认公示群能够正常接收。</p><button type="button" id="bot-test-group">发送群测试消息 <span aria-hidden="true">↗</span></button><small>此操作会向已配置的群发送消息。</small></section>
+
 </aside></div></section>
 <section class="page" id="page-calculator" hidden>
 <div class="page-heading"><div><div class="breadcrumb">管理工作台 <span>/</span> 伤害计算器</div><h1>伤害计算器</h1><p>输入原始伤害，快速计算并比较庄闲结果。</p></div></div>
