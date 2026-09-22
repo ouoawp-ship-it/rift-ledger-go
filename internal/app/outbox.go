@@ -3,6 +3,8 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"html"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -20,6 +22,7 @@ type Keyboard struct {
 type MessagePayload struct {
 	ImageID     string       `json:"image_id,omitempty"`
 	Caption     string       `json:"caption,omitempty"`
+	ParseMode   string       `json:"parse_mode,omitempty"`
 	GroupAction string       `json:"group_action,omitempty"`
 	RoundID     string       `json:"round_id,omitempty"`
 	Media       []MediaPhoto `json:"media,omitempty"`
@@ -27,6 +30,21 @@ type MessagePayload struct {
 	Text        string       `json:"text"`
 	Markup      *Keyboard    `json:"reply_markup,omitempty"`
 }
+
+// Telegram renders player identifiers in a compact monospace code face. Only
+// messages that contain an explicit player-ID label opt into HTML parse mode;
+// all other messages retain their original plain-text behavior.
+var playerIDPattern = regexp.MustCompile(`(?i)(玩家ID|TG ID|Telegram ID|ID)(：|:)(\s*)([0-9]{5,20})`)
+
+func formatPlayerIDs(text string) (string, string) {
+	escaped := html.EscapeString(text)
+	formatted := playerIDPattern.ReplaceAllString(escaped, `$1$2$3<code>$4</code>`)
+	if formatted == escaped {
+		return text, ""
+	}
+	return formatted, "HTML"
+}
+
 type MediaPhoto struct {
 	ID      string `json:"id"`
 	Version string `json:"version"`
@@ -73,7 +91,8 @@ func (s *Service) queue(tx *sqlite.Tx, key string, chat int64, cardKey, text str
 	if chat == 0 {
 		return nil
 	}
-	p := MessagePayload{ChatID: chat, Text: text, Markup: s.messageKeyboard(chat, groupButtons)}
+	formatted, parseMode := formatPlayerIDs(text)
+	p := MessagePayload{ChatID: chat, Text: formatted, ParseMode: parseMode, Markup: s.messageKeyboard(chat, groupButtons)}
 	_, e := tx.Exec("INSERT OR IGNORE INTO outbox(key,chat_id,card_key,payload,created_at) VALUES(?,?,?,?,?)", key, chat, cardKey, asJSON(p), now())
 	return e
 }

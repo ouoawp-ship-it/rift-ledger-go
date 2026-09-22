@@ -144,3 +144,21 @@ func TestTemplateCatalogAndLiteralValues(t *testing.T) {
 		t.Fatal("migration rescaled existing balances", before, after)
 	}
 }
+
+func TestPlayerIDsUseTelegramMonospaceFormatting(t *testing.T) {
+	text, mode := formatPlayerIDs("玩家ID：8142380542\nTG ID: 123456789")
+	if mode != "HTML" {
+		t.Fatalf("expected HTML parse mode, got %q", mode)
+	}
+	if text != "玩家ID：<code>8142380542</code>\nTG ID: <code>123456789</code>" {
+		t.Fatalf("unexpected formatted IDs: %q", text)
+	}
+	text, mode = formatPlayerIDs("玩家：小于 < 文字")
+	if mode != "" || text != "玩家：小于 < 文字" {
+		t.Fatalf("plain messages must remain unchanged: %q / %q", text, mode)
+	}
+	text, mode = formatPlayerIDs("玩家ID：123456789\n昵称：<管理员>")
+	if mode != "HTML" || strings.Contains(text, "<管理员>") || !strings.Contains(text, "&lt;管理员&gt;") {
+		t.Fatalf("ID messages must escape HTML text: %q / %q", text, mode)
+	}
+}

@@ -315,6 +315,9 @@ func (c *Client) SendOne(ctx context.Context, s *app.Service) (bool, error) {
 		return c.sendMedia(ctx, s, *item)
 	}
 	payload := map[string]any{"chat_id": item.Payload.ChatID, "text": item.Payload.Text}
+	if item.Payload.ParseMode != "" {
+		payload["parse_mode"] = item.Payload.ParseMode
+	}
 	if item.Payload.Markup != nil {
 		payload["reply_markup"] = item.Payload.Markup
 	}
@@ -445,6 +448,9 @@ func (c *Client) sendMedia(ctx context.Context, s *app.Service, item app.OutboxI
 		if item.Payload.Markup != nil {
 			markup, _ := json.Marshal(item.Payload.Markup)
 			_ = writer.WriteField("reply_markup", string(markup))
+		}
+		if item.Payload.ParseMode != "" {
+			_ = writer.WriteField("parse_mode", item.Payload.ParseMode)
 		}
 		_ = writer.WriteField("chat_id", fmt.Sprint(item.Payload.ChatID))
 		_ = writer.Close()

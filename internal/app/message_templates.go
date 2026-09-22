@@ -242,7 +242,8 @@ func (s *Service) queueTemplate(tx *sqlite.Tx, key string, chat int64, kind stri
 			}
 			index++
 			if b.Type == "image" {
-				p := MessagePayload{ChatID: chat, Text: b.Text, Caption: b.Text, ImageID: b.ImageID}
+				caption, parseMode := formatPlayerIDs(b.Text)
+				p := MessagePayload{ChatID: chat, Text: caption, Caption: caption, ParseMode: parseMode, ImageID: b.ImageID}
 				if b.Text == "" {
 					p.Text = "自定义消息图片"
 				} else {
