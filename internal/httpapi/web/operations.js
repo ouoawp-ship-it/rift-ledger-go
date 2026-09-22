@@ -29,7 +29,7 @@
  // Keep visited pages handy without rebuilding forms or losing their draft input.
  const visited=new Map(),nav=$('workspace-tabs');
  function renderTabs(){nav.innerHTML=[...visited].map(([tab,label])=>'<div class="workspace-tab"><button type="button" data-tab="'+esc(tab)+'"'+(activeTab===tab?' aria-current="page"':'')+'>'+esc(label)+'</button>'+(tab==='round'?'':'<button type="button" data-close-tab="'+esc(tab)+'" aria-label="关闭'+esc(label)+'标签">×</button>')+'</div>').join('');}
- const beforeTabs=showTab;showTab=async function(tab){await beforeTabs(tab);const label=document.querySelector('.sidebar [data-tab="'+tab+'"]')?.textContent.trim()||tab;visited.set(tab,label);renderTabs();};
+ const beforeTabs=showTab;showTab=async function(tab){await beforeTabs(tab);const label=document.querySelector('.sidebar [data-tab="'+tab+'"]')?.textContent.trim()||document.querySelector('#page-'+tab+' h1')?.textContent.trim()||tab;visited.set(tab,label);renderTabs();};
  nav.addEventListener('click',e=>{const btn=e.target.closest('[data-close-tab]');if(!btn)return;const tab=btn.dataset.closeTab;visited.delete(tab);if(activeTab===tab)busy(btn,()=>showTab('round'));else renderTabs();});
  const toggle=$('nav-toggle');toggle.onclick=()=>{const collapsed=document.body.classList.toggle('nav-compact');toggle.setAttribute('aria-expanded',String(!collapsed));toggle.setAttribute('aria-label',collapsed?'展开侧边导航':'收起侧边导航');};
  document.querySelectorAll('.sidebar [data-tab]').forEach(btn=>btn.title=btn.textContent.trim());

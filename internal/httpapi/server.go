@@ -179,6 +179,15 @@ func (a *API) route(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		limit, offset := pagination(r)
 		switch path {
+		case "api/player-search":
+			v, e := s.SearchPlayers(r.URL.Query().Get("q"))
+			a.respond(w, v, e)
+			return
+		case "api/player-history":
+			q := r.URL.Query()
+			v, e := s.PlayerHistory(app.PlayerHistoryQuery{AccountID: q.Get("account_id"), View: q.Get("view"), Filter: q.Get("filter"), From: q.Get("from"), To: q.Get("to"), Cursor: q.Get("cursor"), Limit: limit})
+			a.respond(w, v, e)
+			return
 		case "api/operations":
 			v, e := s.Operations()
 			a.respond(w, v, e)

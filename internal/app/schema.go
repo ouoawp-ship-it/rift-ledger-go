@@ -96,6 +96,16 @@ func initialize(db *sqlite.DB) error {
 		if _, e = tx.Exec("UPDATE meta SET value='6' WHERE key='schema_version'"); e != nil {
 			return e
 		}
+		// Additive query indexes; no historical rows or version semantics change.
+		for _, query := range []string{
+			`CREATE INDEX IF NOT EXISTS bets_player_history ON bets(account_id,created_at DESC,id DESC)`,
+			`CREATE INDEX IF NOT EXISTS entries_player_history ON entries(account_id,created_at DESC,id DESC)`,
+			`CREATE INDEX IF NOT EXISTS requests_player_history ON balance_requests(account_id,created_at DESC,id DESC)`,
+		} {
+			if _, e = tx.Exec(query); e != nil {
+				return e
+			}
+		}
 		// Re-applying saved group permissions is idempotent, unlike sending a message.
 		if _, e = tx.Exec("UPDATE outbox SET state='PENDING' WHERE state='INFLIGHT' AND COALESCE(json_extract(CASE WHEN json_valid(payload) THEN payload ELSE '{}' END,'$.group_action'),'')!=''"); e != nil {
 			return e

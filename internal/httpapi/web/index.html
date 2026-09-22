@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>峡谷账房 · Go 服务端</title><link rel="stylesheet" href="/style.css"><script src="/api-client.js" defer></script><script src="/app.js" defer></script><script src="/bot-connection.js" defer></script><link rel="stylesheet" href="/message-templates.css"><script src="/message-templates.js" defer></script><link rel="stylesheet" href="/operations.css"><script src="/operations.js" defer></script></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>峡谷账房 · Go 服务端</title><link rel="stylesheet" href="/style.css"><script src="/api-client.js" defer></script><script src="/app.js" defer></script><script src="/bot-connection.js" defer></script><link rel="stylesheet" href="/message-templates.css"><script src="/message-templates.js" defer></script><link rel="stylesheet" href="/operations.css"><script src="/operations.js" defer></script><link rel="stylesheet" href="/player-history.css"><script src="/player-history.js" defer></script></head>
 <body>
 <a class="skip-link" href="#workspace">跳到工作区</a>
 <header class="topbar"><div class="topbar-context"><button id="nav-toggle" type="button" aria-label="收起侧边导航" aria-expanded="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><span class="topbar-brand">峡谷账房</span><span class="topbar-divider">/</span><span id="current-page-name">管理工作台</span></div><div class="connection-group"><span id="connection">未连接</span><span id="bot-connection" class="bot-connection" data-state="unknown" role="status" aria-live="polite" aria-atomic="true"><span class="bot-connection-dot" aria-hidden="true"></span><span id="bot-connection-label">机器人状态待连接</span></span></div></header>
@@ -30,11 +30,23 @@
 <fieldset><legend>本期最近200笔注单</legend><div id="round-bets" class="table-wrap"></div></fieldset>
 </section>
 <section class="page" id="page-players" hidden>
-<div class="page-heading"><div><div class="breadcrumb">管理工作台 <span>/</span> 玩家与积分</div><h1>玩家与积分</h1><p>查看玩家资格、积分余额与下注情况。</p></div></div>
+<div class="page-heading"><div><div class="breadcrumb">管理工作台 <span>/</span> 玩家与积分</div><h1>玩家与积分</h1><p>查看玩家资格、积分余额与下注情况。</p></div><button data-tab="player-history">查询玩家历史</button></div>
 <fieldset><legend>玩家资格</legend><p class="hint">玩家首次上分申请获批后自动成为真实玩家并获得下注资格。停用玩家不会影响已受理注单；之后再次获批上分时会自动恢复资格。</p></fieldset>
 <fieldset><legend>人工上下分</legend><form id="adjust-form"><div class="line"><label>账户 <input id="adjust-id" placeholder="tg:123456789" required size="25"></label><label>变化量 <input id="adjust-delta" type="number" step="0.001" required placeholder="加分正数，减分负数"></label></div><div class="line"><label>备注 <input id="adjust-note" required maxlength="200" size="50"></label><button type="submit">确认调分</button></div></form><small>玩家盈亏按游戏流水记录；玩家模式不设置运营方承付账户和独立费用账户。</small></fieldset>
 <div class="line"><button id="players-prev">上一页</button><button id="players-next">下一页</button><span id="players-page"></span></div><div id="players-table" class="table-wrap"></div>
 </section>
+<section class="page" id="page-player-history" hidden>
+<div class="page-heading"><div><div class="breadcrumb">管理工作台 <span>/</span> 玩家与积分 <span>/</span> 历史明细</div><h1>玩家历史明细</h1><p>逐笔查看下注结果、积分变动与上下分申请。</p></div><button data-tab="players">返回玩家列表</button></div>
+<div class="ph-search-surface"><form id="ph-search-form" class="ph-search-form"><label>查找玩家<input id="ph-search" type="search" maxlength="80" placeholder="昵称、Telegram 用户名或 TG ID"></label><button type="submit">搜索玩家</button></form><div id="ph-search-result" aria-live="polite"></div></div>
+<div id="ph-detail" hidden>
+<div class="ph-player-header"><h2 id="ph-player-name" tabindex="-1"></h2><p id="ph-player-identity"></p></div>
+<div class="ph-metrics"><div><span>当前余额</span><strong id="ph-balance">—</strong></div><div><span>可用积分</span><strong id="ph-available">—</strong></div><div><span>冻结积分</span><strong id="ph-locked">—</strong></div></div>
+<div class="ph-records"><div class="ph-tabs" role="group" aria-label="玩家记录类型"><button data-history-view="bets" aria-pressed="true">历史下注</button><button data-history-view="entries" aria-pressed="false">积分流水</button><button data-history-view="requests" aria-pressed="false">上下分申请</button></div>
+<form id="ph-filter-form" class="ph-filters"><label>开始日期<input id="ph-from" type="date"></label><label>结束日期<input id="ph-to" type="date"></label><label>筛选条件<select id="ph-filter"></select></label><button type="submit">查询</button><button type="button" id="ph-reset">重置筛选</button></form>
+<p class="ph-date-help" id="ph-date-help"></p><div id="ph-results" class="table-wrap" aria-live="polite"></div>
+<div class="ph-pagination"><button id="ph-prev" disabled>上一页</button><button id="ph-next" disabled>下一页</button><span id="ph-page"></span></div>
+<p class="hint">实际盈亏读取当期已保存的结算结果。待结算不计作未中奖；中奖可能因0倍赔率而盈利为0。上下分申请只有批准后才会产生积分流水。</p>
+</div></div></section>
 <section class="page" id="page-rules" hidden>
 <div class="page-heading"><div><div class="breadcrumb">管理工作台 <span>/</span> 赔率设置</div><h1>赔率设置</h1><p>设置盈利倍率和下注限额。</p></div></div>
 <div class="rules-shell">

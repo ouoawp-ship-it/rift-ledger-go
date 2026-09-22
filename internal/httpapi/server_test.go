@@ -90,6 +90,24 @@ func TestStaticAndHealth(t *testing.T) {
 		}
 	}
 }
+
+func TestPlayerHistoryAuthenticationAndValidation(t *testing.T) {
+	h := server(t)
+	for _, path := range []string{"/api/player-search?q=111", "/api/player-history?account_id=tg:111&view=bets"} {
+		if w := request(h, "GET", path, "", "", "", ""); w.Code != 401 {
+			t.Fatal(w.Code)
+		}
+	}
+	if w := request(h, "GET", "/api/player-search?q=111", "", testToken, "", ""); w.Code != 200 {
+		t.Fatal(w.Body.String())
+	}
+	if w := request(h, "GET", "/api/player-history?view=bets", "", testToken, "", ""); w.Code != 400 {
+		t.Fatal(w.Body.String())
+	}
+	if w := request(h, "GET", "/api/player-history?view=bets&account_id=tg:missing", "", testToken, "", ""); w.Code != 404 {
+		t.Fatal(w.Body.String())
+	}
+}
 func TestStrictJSONAndMoneyPrecision(t *testing.T) {
 	h := server(t)
 	for _, body := range []string{`{"damage":"12745","unknown":1}`, `{"damage":"12745"} {}`, `{"damage":12745}`, `{"damage":"01234"}`} {

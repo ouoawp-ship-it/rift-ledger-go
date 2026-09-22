@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "real_telegram": false,
+  "checks": [
+    "player row opens history",
+    "persisted win/loss/void and three decimal amounts",
+    "outcome filter",
+    "ledger cursor pagination",
+    "requests and rejection status",
+    "inclusive date empty state and reset",
+    "username search",
+    "375px and landscape without page overflow",
+    "no script errors or browser token persistence"
+  ]
+}

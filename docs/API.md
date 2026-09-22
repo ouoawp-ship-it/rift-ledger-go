@@ -65,3 +65,6 @@ curl -sS http://127.0.0.1:8080/api/calculate \
 ```
 
 `expected_version` 必须从真实state读取，不硬编码1用于已经运行的库。可运行的完整接口调用样例见 `scripts/smoke.py`：它只建立临时数据库、随机密钥和回环端口，不读取.env或向真实Telegram发消息。
+# 玩家历史查询
+
+新增管理员只读接口 `/api/player-search` 与 `/api/player-history`，提供玩家搜索、按日期/结果筛选的下注、积分流水、上下分申请和游标分页。参数及时间/金额口径见 [玩家历史明细](PLAYER_HISTORY.md)。

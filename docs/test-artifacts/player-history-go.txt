@@ -1,0 +1,2 @@
+ok  	riftledger/internal/app	65.722s
+ok  	riftledger/internal/httpapi	9.325s
