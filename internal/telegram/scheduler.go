@@ -11,6 +11,7 @@ import (
 type sendScheduler struct {
 	mu     sync.Mutex
 	global time.Time
+	paused time.Time
 	chats  map[int64]time.Time
 }
 
@@ -19,6 +20,9 @@ func (s *sendScheduler) reserve(chat int64, at time.Time) time.Duration {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	due := at
+	if s.paused.After(due) {
+		due = s.paused
+	}
 	if s.global.After(due) {
 		due = s.global
 	}
@@ -43,6 +47,13 @@ func (s *sendScheduler) reserve(chat int64, at time.Time) time.Duration {
 		}
 	}
 	return due.Sub(at)
+}
+func (s *sendScheduler) pause(until time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if until.After(s.paused) {
+		s.paused = until
+	}
 }
 func (s *sendScheduler) wait(ctx context.Context, chat int64) bool {
 	for {

@@ -27,6 +27,8 @@ curl -sS http://127.0.0.1:8080/api/calculate \
 
 运行观测：`GET /api/operations` 返回 `checked_at`、`receiver`、`business`、`sender`、`database`，需要管理员鉴权。`receiver.receiver_state` 独立表示接收状态，`receiver.state` 为综合状态；`sender` 含 `pending`、`inflight`、`needs_review`、`oldest_age`（秒）；`database` 含外层操作次数及累计/最大等待、执行毫秒数。业务处理和耗时计数从本次启动开始，不能当作历史持久统计。`GET /api/bot-connection` 保留原字段，并附带这些分项状态。
 
+发送429后，`sender.retry_at` 为持久化的预计恢复Unix秒，无等待时为0。没有更高优先级的待核实问题时，`sender.state` 为 `rate_limited`；有待核实消息时仍为 `blocked`，同时保留 `retry_at`。接收正常但发送限流时综合状态为 `degraded`。
+
 | 方法/路径 | 输入或说明 |
 |---|---|
 | GET /healthz | 无鉴权，仅DB/HTTP健康，不代表TG在线 |

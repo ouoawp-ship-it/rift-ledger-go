@@ -1,0 +1,8 @@
+=== RUN   TestTelegramSoak
+2026/09/22 09:15:30 WARN Telegram发送限流，统一等待 outbox_id=100 retry_seconds=2
+2026/09/22 09:15:39 WARN Telegram发送状态 outbox_id=179 state=PENDING detail="Telegram sendMessage 网络请求失败（DNS解析失败）"
+2026/09/22 09:15:39 WARN Telegram轮询失败，自动重试 error="Telegram错误503: " retry_seconds=5
+    soak_test.go:199: {"delivered":3000,"drain_after_producer_ms":102,"duration_seconds":300,"end_to_end_ms":{"max":6736.601,"p50":43.795,"p95":3138.45},"faults":["duplicate updates","poll HTTP 503","send HTTP 429 retry_after=2","send DNS failure","slow chat"],"max_pending_sampled":29,"passed":true,"real_telegram":false,"updates":3000}
+--- PASS: TestTelegramSoak (300.51s)
+PASS
+ok  	riftledger/internal/telegram	301.532s

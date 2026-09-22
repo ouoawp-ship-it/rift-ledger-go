@@ -126,9 +126,12 @@ func (c *Client) Call(ctx context.Context, method string, payload any, result an
 }
 func (c *Client) decodeResponse(resp *http.Response, result any) error {
 	defer resp.Body.Close()
-	raw, e := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	raw, e := io.ReadAll(io.LimitReader(resp.Body, (2<<20)+1))
 	if e != nil {
 		return &connectionError{message: "Telegram响应读取失败，结果未知"}
+	}
+	if len(raw) > 2<<20 {
+		return &connectionError{message: "Telegram响应超过大小限制，结果未知"}
 	}
 	var envelope struct {
 		OK          *bool           `json:"ok"`
@@ -146,6 +149,9 @@ func (c *Client) decodeResponse(resp *http.Response, result any) error {
 		return &connectionError{message: "Telegram响应缺少状态，结果未知"}
 	}
 	if !*envelope.OK {
+		if envelope.Parameters.RetryAfter > 365*86400 {
+			return &connectionError{message: "Telegram限流等待时间异常，结果未知"}
+		}
 		code := envelope.Code
 		if code == 0 {
 			code = resp.StatusCode
@@ -238,6 +244,7 @@ func (c *Client) Run(ctx context.Context, s *app.Service) error {
 	}()
 	defer func() { cancel(); <-done }()
 	_ = s.BotStatus("已连接 @" + me.Username)
+	readFailures := 0
 	for ctx.Err() == nil {
 		offset, e := s.Offset()
 		if e != nil {
@@ -254,7 +261,8 @@ func (c *Client) Run(ctx context.Context, s *app.Service) error {
 				return e
 			}
 			_ = s.BotStatus("接收异常，将重试：" + e.Error())
-			delay, retry := ConnectionRetryDelay(e)
+			readFailures++
+			delay, retry := readRetryDelay(e, readFailures)
 			if !retry {
 				return e
 			}
@@ -264,6 +272,7 @@ func (c *Client) Run(ctx context.Context, s *app.Service) error {
 			}
 			continue
 		}
+		readFailures = 0
 		_ = s.BotStatus("接收正常｜最近轮询 " + time.Now().UTC().Format(time.RFC3339))
 		for _, u := range updates {
 			if e = s.HandleUpdate(u); e != nil {
@@ -296,8 +305,8 @@ func (c *Client) SendOne(ctx context.Context, s *app.Service) (bool, error) {
 	sendCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
 	defer cancel()
 	ctx = sendCtx
-	if c.paced && c.scheduler != nil && !c.scheduler.wait(ctx, item.Payload.ChatID) {
-		return true, s.CompleteOutbox(*item, "PENDING", 0, "发送限流等待被中断，尚未发出请求", 1)
+	if ready, err := c.waitToSend(ctx, s, *item); !ready || err != nil {
+		return true, err
 	}
 	if item.Payload.GroupAction != "" {
 		return c.sendGroupPermission(ctx, s, *item)
@@ -333,11 +342,7 @@ func (c *Client) SendOne(ctx context.Context, s *app.Service) (bool, error) {
 				id = item.CardMessageID
 				detail = "卡片内容已一致"
 			} else if ae.Code == 429 {
-				state = "PENDING"
-				retry = ae.RetryAfter
-				if retry < 1 {
-					retry = 5
-				}
+				return true, c.rateLimited(s, *item, ae.RetryAfter)
 			} else if ae.Code >= 400 && ae.Code < 500 {
 				state = "FAILED"
 			}
@@ -356,7 +361,7 @@ func (c *Client) SendOne(ctx context.Context, s *app.Service) (bool, error) {
 		slog.Warn("Telegram发送状态", "outbox_id", item.ID, "state", state, "detail", detail)
 	}
 	// Use a fresh local transaction even if the network request's context was canceled.
-	if err := s.CompleteOutbox(*item, state, id, detail, retry); err != nil {
+	if err := persistDelivery(func() error { return s.CompleteOutbox(*item, state, id, detail, retry) }); err != nil {
 		return true, err
 	}
 	return true, nil
@@ -461,18 +466,14 @@ func (c *Client) sendMedia(ctx context.Context, s *app.Service, item app.OutboxI
 				cooldown = 3
 			}
 		}
-		return true, s.CompleteMedia(item, "SENT", result.MessageID, "", string(raw), cooldown)
+		return true, persistDelivery(func() error { return s.CompleteMedia(item, "SENT", result.MessageID, "", string(raw), cooldown) })
 	}
 	if delay, safe := retryUnsent(e, item.Attempts); safe {
-		return true, s.CompleteMedia(item, "PENDING", 0, e.Error(), "", delay)
+		return true, persistDelivery(func() error { return s.CompleteMedia(item, "PENDING", 0, e.Error(), "", delay) })
 	}
 	var ae *APIError
 	if errors.As(e, &ae) && ae.Code == 429 {
-		retry := ae.RetryAfter
-		if retry < 1 {
-			retry = 5
-		}
-		return true, s.CompleteMedia(item, "PENDING", 0, "图片发送限流", "", retry)
+		return true, c.rateLimited(s, item, ae.RetryAfter)
 	}
 	detail := "图片发送结果未知；已排队纯文字公告，请核实图片是否送达"
 	state := "UNKNOWN"
@@ -488,8 +489,8 @@ func (c *Client) sendMedia(ctx context.Context, s *app.Service, item app.OutboxI
 		if ae != nil {
 			detail += " " + ae.Error()
 		}
-		return true, s.CompleteMedia(item, "SENT", 0, detail, state, 0)
+		return true, persistDelivery(func() error { return s.CompleteMedia(item, "SENT", 0, detail, state, 0) })
 	}
 	slog.Warn("Telegram图片降级", "outbox_id", item.ID, "state", state, "detail", detail)
-	return true, s.FallbackMedia(item, state, detail)
+	return true, persistDelivery(func() error { return s.FallbackMedia(item, state, detail) })
 }

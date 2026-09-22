@@ -209,6 +209,10 @@ func (s *Service) queueWinners(tx *sqlite.Tx, r Round) error {
 func (s *Service) ClaimOutbox() (*OutboxItem, error) {
 	var out *OutboxItem
 	e := s.DB.Transaction(func(tx *sqlite.Tx) error {
+		until, e := sendNotBefore(tx)
+		if e != nil || until > now() {
+			return e
+		}
 		row, e := tx.One(`SELECT o.* FROM outbox o WHERE o.state='PENDING' AND o.next_at<=?
 		 AND NOT EXISTS (SELECT 1 FROM outbox p WHERE p.chat_id=o.chat_id AND p.id<o.id AND p.state!='SENT'
 		 AND (COALESCE(json_extract(CASE WHEN json_valid(p.payload) THEN p.payload ELSE '{}' END,'$.group_action'),'')='')=(COALESCE(json_extract(CASE WHEN json_valid(o.payload) THEN o.payload ELSE '{}' END,'$.group_action'),'')='')

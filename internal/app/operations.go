@@ -70,6 +70,7 @@ type QueueHealth struct {
 	Inflight    int64  `json:"inflight"`
 	NeedsReview int64  `json:"needs_review"`
 	OldestAge   int64  `json:"oldest_age"`
+	RetryAt     int64  `json:"retry_at"`
 }
 
 func readQueueHealth(tx *sqlite.Tx) (QueueHealth, error) {
@@ -89,6 +90,15 @@ func readQueueHealth(tx *sqlite.Tx) (QueueHealth, error) {
 	}
 	if q.OldestAge >= 60 {
 		q.State = "delayed"
+	}
+	q.RetryAt, e = sendNotBefore(tx)
+	if e != nil {
+		return QueueHealth{}, e
+	}
+	if q.RetryAt > now() {
+		q.State = "rate_limited"
+	} else {
+		q.RetryAt = 0
 	}
 	if q.NeedsReview > 0 {
 		q.State = "blocked"

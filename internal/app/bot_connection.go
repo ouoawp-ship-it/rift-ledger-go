@@ -66,6 +66,10 @@ func (s *Service) BotConnection() (BotConnection, error) {
 	}
 	status.ReceiverState = status.State
 	status.Business = s.businessSnapshot()
+	if status.State == "online" && status.Sender.RetryAt > status.CheckedAt {
+		status.State = "degraded"
+		status.Message += fmt.Sprintf("｜Telegram限流，发送端等待%d秒后继续", status.Sender.RetryAt-status.CheckedAt)
+	}
 	if status.State == "online" && status.Business.State == "error" {
 		status.State = "degraded"
 		status.Message += fmt.Sprintf("｜业务处理失败，更新编号%d，正在重试", status.Business.FailedUpdate)

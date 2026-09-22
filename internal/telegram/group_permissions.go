@@ -22,11 +22,7 @@ func (c *Client) sendGroupPermission(ctx context.Context, s *app.Service, item a
 		var ae *APIError
 		if errors.As(err, &ae) {
 			if ae.Code == 429 {
-				state = "PENDING"
-				retry = ae.RetryAfter
-				if retry < 1 {
-					retry = 5
-				}
+				return true, c.rateLimited(s, item, ae.RetryAfter)
 			} else if ae.Code >= 400 && ae.Code < 500 {
 				state = "FAILED"
 			}
@@ -34,7 +30,7 @@ func (c *Client) sendGroupPermission(ctx context.Context, s *app.Service, item a
 	}
 	// Group permissions form a separate lane: failed notifications must not
 	// prevent recovery, and missing admin rights must not block announcements.
-	return true, s.CompleteOutbox(item, state, 0, detail, retry)
+	return true, persistDelivery(func() error { return s.CompleteOutbox(item, state, 0, detail, retry) })
 }
 
 func (c *Client) applyGroupPermission(ctx context.Context, s *app.Service, item app.OutboxItem) (string, error) {
