@@ -4,6 +4,9 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import shutil
+import subprocess
+import sys
 import tempfile
 import time
 import unittest
@@ -210,6 +213,21 @@ class RecoveryTests(unittest.TestCase):
         with patch.object(docker, "command", side_effect=[b'100000', b'Filesystem 1024-blocks Used Available Capacity Mounted\n/dev/test 1000 999 1 99% /data\n']):
             with self.assertRaisesRegex(r.RecoveryError, "磁盘余量不足"):
                 docker.capacity("a" * 64, self.root)
+
+    @unittest.skipUnless(shutil.which("systemd-analyze"), "systemd unavailable")
+    def test_generated_systemd_units_parse_with_spaces(self):
+        source = (r.ROOT / "scripts/install-recovery-timer.sh").read_text().split("<<'PY'\n", 1)[1].split("\nPY\n", 1)[0]
+        units = self.root / "units"
+        units.mkdir()
+        source = source.replace("Path('/etc/systemd/system')", "Path(" + repr(str(units)) + ")")
+        with patch.object(sys, "argv", ["generator", "/opt/rift ledger with spaces"]):
+            exec(source, {"__name__": "__main__"})
+        # Supply a harmless stub dependency for test machines without Docker's
+        # service installed; no units are installed or started by analyze.
+        (units / "docker.service").write_text("[Service]\nExecStart=/bin/true\n")
+        result = subprocess.run(["systemd-analyze", "verify", str(units / "rift-ledger-backup.service"), str(units / "rift-ledger-backup.timer")],
+                                capture_output=True, text=True, env=os.environ | {"SYSTEMD_UNIT_PATH": str(units) + ":"})
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":

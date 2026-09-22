@@ -39,7 +39,7 @@ IOSchedulingClass=best-effort
 IOSchedulingPriority=7
 StandardOutput=journal
 StandardError=journal
-'''.format(working=quote(root), script=quote(root + '/scripts/recovery.py').replace('$', '$$'))
+'''.format(working=root.replace('%', '%%'), script=quote(root + '/scripts/recovery.py').replace('$', '$$'))
 timer = '''# Managed by Rift Ledger recovery
 [Unit]
 Description=Rift Ledger backup every 15 minutes

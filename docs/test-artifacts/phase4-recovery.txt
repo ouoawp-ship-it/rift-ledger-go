@@ -6,6 +6,7 @@ test_docker_capacity_checks_data_volume_space (__main__.RecoveryTests.test_docke
 test_docker_checker_has_no_network_or_live_mount (__main__.RecoveryTests.test_docker_checker_has_no_network_or_live_mount) ... ok
 test_expired_snapshot_not_hidden_by_fresh_completion (__main__.RecoveryTests.test_expired_snapshot_not_hidden_by_fresh_completion) ... ok
 test_failed_backup_preserves_previous_and_no_partial_publish (__main__.RecoveryTests.test_failed_backup_preserves_previous_and_no_partial_publish) ... ok
+test_generated_systemd_units_parse_with_spaces (__main__.RecoveryTests.test_generated_systemd_units_parse_with_spaces) ... ok
 test_low_space_stops_before_snapshot_and_retention (__main__.RecoveryTests.test_low_space_stops_before_snapshot_and_retention) ... ok
 test_minimum_retention_and_lock (__main__.RecoveryTests.test_minimum_retention_and_lock) ... ok
 test_prepare_disables_bot_and_does_not_copy_secrets (__main__.RecoveryTests.test_prepare_disables_bot_and_does_not_copy_secrets) ... ok
@@ -16,6 +17,6 @@ test_symlink_and_path_traversal_rejected (__main__.RecoveryTests.test_symlink_an
 test_tamper_cannot_prepare_or_pass_status (__main__.RecoveryTests.test_tamper_cannot_prepare_or_pass_status) ... ok
 
 ----------------------------------------------------------------------
-Ran 16 tests in 10.765s
+Ran 17 tests in 11.134s
 
 OK
