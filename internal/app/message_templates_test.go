@@ -122,6 +122,11 @@ func TestTemplateCatalogAndLiteralValues(t *testing.T) {
 	}
 	// Schema 4 already stores thousandths; upgrading and reopening must not rescale.
 	before := acc(t, s, "tg:111").Balance
+	for _, q := range []string{"DROP TRIGGER entries_daily_game", "DROP TABLE daily_game_totals"} {
+		if _, err := s.DB.Exec(q); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if _, e := s.DB.Exec("UPDATE meta SET value='4' WHERE key='schema_version'"); e != nil {
 		t.Fatal(e)
 	}

@@ -90,6 +90,11 @@ func TestCorruptNoticeCannotBlockGroupRecoveryLane(t *testing.T) {
 func TestVersionThreeUpgradeDoesNotRescaleMoney(t *testing.T) {
 	s, _ := fixture(t, "settlement", "refund", "fees")
 	before := acc(t, s, "tg:111").Balance
+	for _, q := range []string{"DROP TRIGGER entries_daily_game", "DROP TABLE daily_game_totals"} {
+		if _, err := s.DB.Exec(q); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if _, err := s.DB.Exec("UPDATE meta SET value='3' WHERE key='schema_version'"); err != nil {
 		t.Fatal(err)
 	}

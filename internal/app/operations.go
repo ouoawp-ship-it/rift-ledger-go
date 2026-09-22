@@ -110,5 +110,9 @@ func (s *Service) Operations() (any, error) {
 	if e != nil {
 		return nil, e
 	}
-	return map[string]any{"checked_at": now(), "receiver": bot, "business": bot.Business, "sender": bot.Sender, "database": s.DB.Metrics()}, nil
+	result := map[string]any{"checked_at": now(), "receiver": bot, "business": bot.Business, "sender": bot.Sender, "database": s.DB.Metrics()}
+	if s.AuditDB != nil {
+		result["audit_database"] = s.AuditDB.Metrics()
+	}
+	return result, nil
 }

@@ -29,6 +29,8 @@ curl -sS http://127.0.0.1:8080/api/calculate \
 
 发送429后，`sender.retry_at` 为持久化的预计恢复Unix秒，无等待时为0。没有更高优先级的待核实问题时，`sender.state` 为 `rate_limited`；有待核实消息时仍为 `blocked`，同时保留 `retry_at`。接收正常但发送限流时综合状态为 `degraded`。
 
+第三阶段：`operations.audit_database` 为完整对账只读连接的独立耗时/等待计数；`database` 仍为业务连接。`GET /api/reconcile` 在一致的WAL读快照中核对，不占用业务连接互斥锁。`state.bets` 仍是最近200笔、按时间/id升序展示，但现在直接在SQL中限量。玩家今日盈亏改读与流水事务同步的北京时间日汇总，金额和统计口径不变。
+
 | 方法/路径 | 输入或说明 |
 |---|---|
 | GET /healthz | 无鉴权，仅DB/HTTP健康，不代表TG在线 |

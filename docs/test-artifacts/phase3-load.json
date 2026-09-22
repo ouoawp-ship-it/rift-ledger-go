@@ -1,0 +1,63 @@
+{
+  "passed": true,
+  "production_data": false,
+  "real_telegram": false,
+  "history_entries": 1000000,
+  "concurrency": 8,
+  "http_requests": 288,
+  "elapsed_seconds": 3.572,
+  "requests_per_second": 80.63,
+  "latency_ms": {
+    "credit_and_replay": {
+      "samples": 64,
+      "p50": 22.29,
+      "p95": 88.48,
+      "max": 129.76
+    },
+    "accounts": {
+      "samples": 40,
+      "p50": 2.09,
+      "p95": 40.92,
+      "max": 65.46
+    },
+    "reconcile": {
+      "samples": 40,
+      "p50": 644.49,
+      "p95": 706.0,
+      "max": 717.13
+    },
+    "operations": {
+      "samples": 40,
+      "p50": 2.15,
+      "p95": 59.29,
+      "max": 79.19
+    },
+    "state": {
+      "samples": 40,
+      "p50": 1.74,
+      "p95": 47.47,
+      "max": 59.33
+    }
+  },
+  "database": {
+    "operations": 289,
+    "wait_ms": 1773.498956,
+    "work_ms": 3049.60845,
+    "max_wait_ms": 76.581998,
+    "max_work_ms": 95.825489
+  },
+  "audit_database": {
+    "operations": 42,
+    "wait_ms": 18958.844892,
+    "work_ms": 3635.986732,
+    "max_wait_ms": 626.031797,
+    "max_work_ms": 95.722821
+  },
+  "checks": [
+    "64 unique credits replayed once each; no duplicate credits",
+    "all 16 balances match integer oracle including seeded history",
+    "daily summaries match authoritative GAME entries",
+    "ledger reconciliation balanced",
+    "monitoring/statistics queries mixed with writes; scale mode includes 40 full reconciliations"
+  ]
+}

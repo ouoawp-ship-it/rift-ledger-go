@@ -116,6 +116,14 @@ func run() error {
 	if e = s.EnablePlayerOnly(); e != nil {
 		return e
 	}
+	// Expensive reconciliation holds a read snapshot, not the message writer's
+	// mutex. WAL permits normal commands to commit while this snapshot is read.
+	auditDB, e := sqlite.OpenReadOnly(dbPath)
+	if e != nil {
+		return e
+	}
+	defer auditDB.Close()
+	s.AuditDB = auditDB
 	s.Settings = settings
 	s.Champions, e = champion.New(filepath.Join(dir, "champions"))
 	if e != nil {

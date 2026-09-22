@@ -1,0 +1,57 @@
+{
+  "passed": true,
+  "real_telegram": false,
+  "production_data": false,
+  "offline_verification": {
+    "counts": {
+      "accounts": 1,
+      "bets": 2,
+      "entries": 2,
+      "group_permissions": 0,
+      "idempotency": 12,
+      "message_images": 0,
+      "message_templates": 1,
+      "outbox": 2,
+      "rounds": 2,
+      "tg_updates": 0
+    },
+    "daily_total_issues": 0,
+    "database_bytes": 217088,
+    "foreign_key_issues": 0,
+    "free_bytes": 0,
+    "integrity_ok": true,
+    "ledger": {
+      "account_count": 1,
+      "balance_sum": 1120.2,
+      "balanced": true,
+      "entry_count": 2,
+      "issues": [],
+      "pending_bets": 1
+    },
+    "ledger_chain_issues": 0,
+    "ok": true,
+    "player_only": true,
+    "queue": [
+      {
+        "count": "1",
+        "state": "INFLIGHT"
+      },
+      {
+        "count": "1",
+        "state": "PENDING"
+      }
+    ],
+    "schema_version": "6",
+    "telegram_offset": {
+      "value": "12345"
+    }
+  },
+  "checks": [
+    "online backup copied into fresh data directory",
+    "balance 1120.200 and reserved 100.001 retained",
+    "rules, templates, active round, ledger and offset retained",
+    "credit and settlement replay do not change restored balances",
+    "pending messages not sent; interrupted send becomes UNKNOWN",
+    "post-backup credit correctly excluded; original backup unchanged"
+  ]
+}

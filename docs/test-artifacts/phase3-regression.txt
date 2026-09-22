@@ -1,0 +1,21 @@
+	riftledger/cmd/dbcheck		coverage: 0.0% of statements
+	riftledger/cmd/server		coverage: 0.0% of statements
+ok  	riftledger/internal/app	72.118s	coverage: 73.0% of statements
+ok  	riftledger/internal/champion	1.093s	coverage: 32.4% of statements
+ok  	riftledger/internal/httpapi	9.859s	coverage: 42.7% of statements
+ok  	riftledger/internal/runtimeconfig	1.903s	coverage: 78.2% of statements
+ok  	riftledger/internal/sqlite	16.999s	coverage: 78.4% of statements
+ok  	riftledger/internal/telegram	36.890s	coverage: 82.9% of statements
+ok  	riftledger/pkg/bull	3.247s	coverage: 91.8% of statements
+{
+  "passed": true,
+  "real_telegram": false,
+  "production_data": false,
+  "checks": [
+    "fractional credit 1000.199 + bet 100.001 × 1.2 = balance 1120.200; duplicate credit/settlement, summary, ledger and reconciliation",
+    "32 HTTP reads with 8 concurrent clients returned complete JSON and request IDs",
+    "custom text/emoji template save is idempotent, immediate and survives restart; preview replaces period",
+    "save response before graceful exit; restart persists settings and ledger; replay does not restart"
+  ]
+}
+跳过前端测试：未安装 Node.js；可单独运行 node --test scripts/*_test.cjs

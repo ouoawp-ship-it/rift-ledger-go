@@ -16,11 +16,15 @@ var schema = []string{
 	`CREATE UNIQUE INDEX IF NOT EXISTS one_active_round ON rounds((1)) WHERE state IN ('DRAFT','OPEN','CLOSED')`,
 	`CREATE TABLE IF NOT EXISTS bets (id TEXT PRIMARY KEY,round_id TEXT NOT NULL REFERENCES rounds(id),account_id TEXT NOT NULL REFERENCES accounts(id),position INTEGER NOT NULL CHECK(position BETWEEN 1 AND 5),stake INTEGER NOT NULL CHECK(stake>0),fee INTEGER NOT NULL CHECK(fee>=0),state TEXT NOT NULL CHECK(state IN ('RESERVED','WIN','LOSS','VOID')),game_delta INTEGER NOT NULL DEFAULT 0,net_delta INTEGER NOT NULL DEFAULT 0,created_at INTEGER NOT NULL,settled_at INTEGER NOT NULL DEFAULT 0)`,
 	`CREATE INDEX IF NOT EXISTS bets_round ON bets(round_id)`,
+	`CREATE INDEX IF NOT EXISTS bets_round_recent ON bets(round_id,created_at DESC,id DESC)`,
 	`CREATE INDEX IF NOT EXISTS bets_account ON bets(account_id,created_at DESC)`,
 	`CREATE INDEX IF NOT EXISTS bets_account_round_state ON bets(account_id,round_id,state)`,
 	`CREATE INDEX IF NOT EXISTS bets_account_settled ON bets(account_id,settled_at DESC,round_id)`,
+	`CREATE INDEX IF NOT EXISTS bets_reserved ON bets(account_id,stake) WHERE state='RESERVED'`,
 	`CREATE TABLE IF NOT EXISTS entries (id INTEGER PRIMARY KEY AUTOINCREMENT,batch TEXT NOT NULL,account_id TEXT NOT NULL REFERENCES accounts(id),round_id TEXT NOT NULL DEFAULT '',bet_id TEXT NOT NULL DEFAULT '',kind TEXT NOT NULL,delta INTEGER NOT NULL,balance_after INTEGER NOT NULL,note TEXT NOT NULL,created_at INTEGER NOT NULL,UNIQUE(batch,account_id))`,
 	`CREATE INDEX IF NOT EXISTS entries_account ON entries(account_id,created_at DESC)`,
+	`CREATE INDEX IF NOT EXISTS entries_account_ledger ON entries(account_id,id,delta,balance_after)`,
+	`CREATE INDEX IF NOT EXISTS accounts_player_recent ON accounts(created_at DESC,id) WHERE role='player'`,
 	`CREATE INDEX IF NOT EXISTS entries_game_time ON entries(created_at,account_id,delta) WHERE kind='GAME'`,
 	`CREATE TRIGGER IF NOT EXISTS entries_no_update BEFORE UPDATE ON entries BEGIN SELECT RAISE(ABORT,'immutable ledger'); END`,
 	`CREATE TRIGGER IF NOT EXISTS entries_no_delete BEFORE DELETE ON entries BEGIN SELECT RAISE(ABORT,'immutable ledger'); END`,
@@ -45,7 +49,7 @@ func initialize(db *sqlite.DB) error {
 		if e != nil {
 			return e
 		}
-		if v != nil && v["value"] != "1" && v["value"] != "2" && v["value"] != "3" && v["value"] != "4" && v["value"] != "5" {
+		if v != nil && v["value"] != "1" && v["value"] != "2" && v["value"] != "3" && v["value"] != "4" && v["value"] != "5" && v["value"] != "6" {
 			return fmt.Errorf("数据库版本不匹配，拒绝自动降级")
 		}
 		if _, e = tx.Exec("INSERT OR IGNORE INTO meta(key,value) VALUES('schema_version','1')"); e != nil {
@@ -74,7 +78,22 @@ func initialize(db *sqlite.DB) error {
 				return e
 			}
 		}
-		if _, e = tx.Exec("UPDATE meta SET value='5' WHERE key='schema_version'"); e != nil {
+		if v == nil || v["value"] != "6" {
+			if e = migrateDailyTotals(tx); e != nil {
+				return fmt.Errorf("migration 6: %w", e)
+			}
+		}
+		trigger, e := tx.One("SELECT name FROM sqlite_master WHERE type='trigger' AND name='entries_daily_game'")
+		if e != nil {
+			return e
+		}
+		if trigger == nil {
+			return fmt.Errorf("日统计维护触发器缺失；拒绝运行失效统计")
+		}
+		if _, e = tx.Query("SELECT day,account_id,delta FROM daily_game_totals LIMIT 0"); e != nil {
+			return e
+		}
+		if _, e = tx.Exec("UPDATE meta SET value='6' WHERE key='schema_version'"); e != nil {
 			return e
 		}
 		// Re-applying saved group permissions is idempotent, unlike sending a message.

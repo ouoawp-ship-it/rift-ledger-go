@@ -19,6 +19,7 @@ type Service struct {
 	outboxWake chan struct{}
 	operations operationMonitor
 	DB         *sqlite.DB
+	AuditDB    *sqlite.DB // optional separate read-only connection for full reconciliation
 	Config     RuntimeConfig
 	Settings   *runtimeconfig.Store
 	Champions  *champion.ChampionService
@@ -359,16 +360,16 @@ func (s *Service) State() (any, error) {
 		}
 		bs := []Bet{}
 		if active != nil {
-			all, e := betsFor(tx, active.ID)
+			// Bound work in SQL, not after materializing every bet in the period.
+			rows, e := tx.Query("SELECT * FROM bets WHERE round_id=? ORDER BY created_at DESC,id DESC LIMIT 200", active.ID)
 			if e != nil {
 				return e
 			}
-			if len(all) > 200 {
-				all = all[len(all)-200:]
+			for i := len(rows) - 1; i >= 0; i-- {
+				bs = append(bs, betFrom(rows[i]))
 			}
-			bs = all
 		}
-		count, e := tx.One("SELECT COUNT(*) AS n FROM outbox WHERE state!='SENT'")
+		count, e := tx.One("SELECT COUNT(*) AS n FROM outbox WHERE state IN ('PENDING','INFLIGHT','FAILED','UNKNOWN')")
 		if e != nil {
 			return e
 		}
@@ -466,7 +467,7 @@ func (s *Service) PlayerSummary(limit, offset int) (any, error) {
 		zone := time.FixedZone("CST", 8*3600)
 		t := time.Now().In(zone)
 		start := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, zone).Unix()
-		stats, e := tx.One("SELECT (SELECT COUNT(*) FROM accounts WHERE role='player') AS players,(SELECT COALESCE(SUM(balance),0) FROM accounts WHERE role='player') AS balance,(SELECT COALESCE(-SUM(e.delta),0) FROM entries e JOIN accounts a ON a.id=e.account_id WHERE a.role='player' AND e.kind='GAME' AND e.created_at>=?) AS profit", start)
+		stats, e := tx.One("SELECT (SELECT COUNT(*) FROM accounts WHERE role='player') AS players,(SELECT COALESCE(SUM(balance),0) FROM accounts WHERE role='player') AS balance,(SELECT COALESCE(-SUM(d.delta),0) FROM daily_game_totals d JOIN accounts a ON a.id=d.account_id WHERE a.role='player' AND d.day>=?) AS profit", (start+28800)/86400)
 		if e != nil {
 			return e
 		}

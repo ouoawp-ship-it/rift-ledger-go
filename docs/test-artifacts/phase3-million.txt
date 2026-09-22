@@ -1,0 +1,12 @@
+goos: linux
+goarch: amd64
+pkg: riftledger/internal/app
+cpu: Intel(R) Core(TM) i5-8259U CPU @ 2.30GHz
+BenchmarkDataLayer/state-8         	       3	   8005861 ns/op	  644629 B/op	   10400 allocs/op
+BenchmarkDataLayer/players-8       	       3	  16598511 ns/op	   62997 B/op	    1483 allocs/op
+BenchmarkDataLayer/entries-8       	       3	    772169 ns/op	   56608 B/op	    1313 allocs/op
+BenchmarkDataLayer/history-8       	       3	   1041089 ns/op	  122029 B/op	    1782 allocs/op
+BenchmarkDataLayer/queue-8         	       3	    169858 ns/op	    1250 B/op	      26 allocs/op
+BenchmarkDataLayer/reconcile-8     	       3	 240277576 ns/op	15687376 B/op	  290377 allocs/op
+PASS
+ok  	riftledger/internal/app	20.124s

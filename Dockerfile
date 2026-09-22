@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev l
 WORKDIR /src
 COPY . .
 RUN CGO_ENABLED=1 go test ./... \
-    && CGO_ENABLED=1 go build -trimpath -ldflags="-s -w" -o /out/rift-ledger-go ./cmd/server
+    && CGO_ENABLED=1 go build -trimpath -ldflags="-s -w" -o /out/rift-ledger-go ./cmd/server \
+    && CGO_ENABLED=1 go build -trimpath -ldflags="-s -w" -o /out/rift-dbcheck ./cmd/dbcheck
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends libsqlite3-0 sqlite3 ca-certificates tzdata curl fonts-noto-cjk \
@@ -17,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libsqlite3-0 sq
     && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin riftledger \
     && install -d -o 10001 -g 10001 -m 0700 /data
 COPY --from=build /out/rift-ledger-go /usr/local/bin/rift-ledger-go
+COPY --from=build /out/rift-dbcheck /usr/local/bin/rift-dbcheck
 USER 10001:10001
 WORKDIR /data
 EXPOSE 8080

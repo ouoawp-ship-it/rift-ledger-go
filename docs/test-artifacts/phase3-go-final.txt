@@ -1,0 +1,9 @@
+?   	riftledger/cmd/dbcheck	[no test files]
+?   	riftledger/cmd/server	[no test files]
+ok  	riftledger/internal/app	76.549s
+ok  	riftledger/internal/champion	0.014s
+ok  	riftledger/internal/httpapi	9.019s
+ok  	riftledger/internal/runtimeconfig	0.893s
+ok  	riftledger/internal/sqlite	17.526s
+ok  	riftledger/internal/telegram	36.655s
+ok  	riftledger/pkg/bull	(cached)

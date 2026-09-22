@@ -1,0 +1,9 @@
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  773.6kB
+
+Step 1/16 : ARG GO_VERSION=1.27.1
+Step 2/16 : FROM golang:${GO_VERSION}-bookworm AS build
+failed to resolve reference "docker.io/library/golang:1.27.1-bookworm": failed to do request: Head "https://registry-1.docker.io/v2/library/golang/manifests/1.27.1-bookworm": dial tcp 31.13.68.169:443: i/o timeout

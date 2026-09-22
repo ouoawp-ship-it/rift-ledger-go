@@ -1,0 +1,2 @@
+ok  	riftledger/internal/app	4.244s
+ok  	riftledger/internal/sqlite	2.482s
