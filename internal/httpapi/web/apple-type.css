@@ -1,0 +1,48 @@
+/* Apple-inspired type scale: restrained weights, generous leading and tighter display tracking. */
+:root { --type-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif; --type-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+body, button, input, select, textarea { font-family: var(--type-sans); }
+body { font-weight: 400; line-height: 1.5; }
+h1, h2, h3, legend, strong { letter-spacing: -.018em; }
+h1 { font-size: 32px; line-height: 1.15; font-weight: 600; }
+h2 { font-size: 22px; line-height: 1.25; font-weight: 600; }
+h3, legend { font-size: 17px; line-height: 1.35; font-weight: 600; }
+.page-heading { margin-bottom: 30px; }
+.page-heading h1 { font-size: 32px; font-weight: 600; letter-spacing: -.025em; }
+.page-heading p { margin-top: 10px; font-size: 14px; line-height: 1.55; color: #6e6e73; }
+.breadcrumb { font-size: 12px; line-height: 1.4; }
+.topbar-context { font-size: 13px; }
+.topbar-brand { font-weight: 600; letter-spacing: -.01em; }
+.nav-caption { font-size: 11px; font-weight: 500; }
+.sidebar button[data-tab] { font-size: 13px; letter-spacing: -.005em; }
+.sidebar button[data-tab].active { font-weight: 500; }
+button { font-size: 14px; font-weight: 500; letter-spacing: -.006em; }
+input, select, textarea { font-size: 14px; }
+label, .field > span, .setting-row, .enable-row strong { font-size: 14px; }
+small, .hint, .page-heading small { line-height: 1.55; }
+th { font-size: 12px; font-weight: 500; }
+td { font-size: 13px; }
+.mono { font-family: var(--type-mono); letter-spacing: -.01em; }
+fieldset { padding-top: 24px; }
+legend { padding: 0 8px; }
+.panel-heading h3, .limits-panel h3 { font-size: 17px; font-weight: 600; }
+.summary strong, #round-state { font-weight: 600; }
+.bot-metric .metric-label { font-size: 12px; font-weight: 500; }
+.metric-value, .metric-value h2 { font-size: 24px; font-weight: 600; letter-spacing: -.025em; }
+.metric-value h2 { line-height: 1.2; }
+.ops-metric strong, .ops-health strong { font-weight: 600; letter-spacing: -.02em; }
+.ph-player-header h2 { font-size: 24px; font-weight: 600; letter-spacing: -.025em; }
+.ph-metrics strong { font-size: 26px; font-weight: 600; letter-spacing: -.025em; }
+.ph-tabs button { font-size: 13px; font-weight: 500; }
+.template-selector strong, .template-guide h2, .preview-heading h2 { font-size: 17px; font-weight: 600; }
+.block-heading strong { font-size: 13px; font-weight: 500; letter-spacing: 0; }
+.message-block textarea { font-size: 14px; line-height: 1.75; }
+.settings-title strong, .section-label h2 { font-size: 17px; font-weight: 600; }
+.field > span, .enable-row strong { font-weight: 500; }
+.rules-fixed strong { font-size: 17px; font-weight: 600; }
+.rules-fixed p { font-size: 14px; line-height: 1.75; }
+.odds-card, .setting-row { font-size: 14px; }
+.odds-input input { font-size: 15px; font-weight: 600; }
+.request-alert-card h2 { font-size: 24px; font-weight: 600; letter-spacing: -.025em; }
+#login-box h1, .login-heading h1 { font-size: 30px; font-weight: 600; letter-spacing: -.025em; }
+#login-box small { font-size: 12px; }
+@media (max-width: 680px) { h1, .page-heading h1 { font-size: 28px; } h2 { font-size: 20px; } legend { font-size: 16px; } .page-heading { margin-bottom: 24px; } .page-heading p { font-size: 13px; } .metric-value, .metric-value h2 { font-size: 22px; } }
