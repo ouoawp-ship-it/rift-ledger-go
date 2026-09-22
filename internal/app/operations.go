@@ -74,7 +74,7 @@ type QueueHealth struct {
 }
 
 func readQueueHealth(tx *sqlite.Tx) (QueueHealth, error) {
-	r, e := tx.One(`SELECT COALESCE(SUM(state='PENDING'),0) AS pending,COALESCE(SUM(state='INFLIGHT'),0) AS inflight,COALESCE(SUM(state IN ('FAILED','UNKNOWN')),0) AS review,COALESCE(MIN(CASE WHEN state IN ('PENDING','INFLIGHT') THEN created_at END),0) AS oldest FROM outbox WHERE state!='SENT'`)
+	r, e := tx.One(`SELECT COALESCE(SUM(state='PENDING'),0) AS pending,COALESCE(SUM(state='INFLIGHT'),0) AS inflight,COALESCE(SUM(state IN ('FAILED','UNKNOWN')),0) AS review,COALESCE(MIN(CASE WHEN state IN ('PENDING','INFLIGHT') THEN created_at END),0) AS oldest FROM active_outbox WHERE state!='SENT'`)
 	if e != nil {
 		return QueueHealth{}, e
 	}

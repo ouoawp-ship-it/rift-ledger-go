@@ -196,9 +196,6 @@ func (c *Client) Run(ctx context.Context, s *app.Service) error {
 	if s.Config.BotUsername != "" && !strings.EqualFold(me.Username, s.Config.BotUsername) {
 		return errors.New("TG_BOT_USERNAME与Token身份不匹配，拒绝启动")
 	}
-	if e := s.BindBot(me.ID); e != nil {
-		return e
-	}
 	var hook struct {
 		URL string `json:"url"`
 	}
@@ -207,6 +204,9 @@ func (c *Client) Run(ctx context.Context, s *app.Service) error {
 	}
 	if hook.URL != "" {
 		return errors.New("当前Bot已有Webhook，未擅自删除；请停用旧接收器并人工处理后再运行")
+	}
+	if e := s.BindBot(me.ID); e != nil {
+		return e
 	}
 	senderCtx, cancel := context.WithCancel(ctx)
 	defer cancel()

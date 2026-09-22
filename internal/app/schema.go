@@ -36,6 +36,13 @@ var schema = []string{
 	`CREATE INDEX IF NOT EXISTS outbox_pending ON outbox(state,next_at,id)`,
 	`CREATE INDEX IF NOT EXISTS outbox_chat_blocking ON outbox(chat_id,id) WHERE state!='SENT'`,
 	`CREATE INDEX IF NOT EXISTS outbox_chat_cooldown ON outbox(chat_id,next_at) WHERE state='SENT'`,
+	`CREATE TABLE IF NOT EXISTS bot_sessions (bot_id INTEGER PRIMARY KEY,offset INTEGER NOT NULL DEFAULT 0,pause_until INTEGER NOT NULL DEFAULT 0)`,
+	`CREATE TABLE IF NOT EXISTS bot_update_ids (id INTEGER PRIMARY KEY AUTOINCREMENT,bot_id INTEGER NOT NULL,update_id INTEGER NOT NULL,UNIQUE(bot_id,update_id))`,
+	`CREATE TABLE IF NOT EXISTS bot_cards (bot_id INTEGER NOT NULL,key TEXT NOT NULL,message_id INTEGER NOT NULL,PRIMARY KEY(bot_id,key))`,
+	`CREATE TABLE IF NOT EXISTS outbox_bots (outbox_id INTEGER PRIMARY KEY REFERENCES outbox(id),bot_id INTEGER NOT NULL)`,
+	`CREATE INDEX IF NOT EXISTS outbox_bot_owner ON outbox_bots(bot_id,outbox_id)`,
+	`CREATE TRIGGER IF NOT EXISTS outbox_capture_bot AFTER INSERT ON outbox BEGIN INSERT INTO outbox_bots(outbox_id,bot_id) VALUES(NEW.id,COALESCE((SELECT CAST(value AS INTEGER) FROM meta WHERE key='bot_id'),0)); END`,
+	`CREATE VIEW IF NOT EXISTS active_outbox AS SELECT o.* FROM outbox o LEFT JOIN outbox_bots b ON b.outbox_id=o.id WHERE COALESCE(b.bot_id,0)=COALESCE((SELECT CAST(value AS INTEGER) FROM meta WHERE key='bot_id'),0)`,
 }
 
 func initialize(db *sqlite.DB) error {

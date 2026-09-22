@@ -369,7 +369,7 @@ func (s *Service) State() (any, error) {
 				bs = append(bs, betFrom(rows[i]))
 			}
 		}
-		count, e := tx.One("SELECT COUNT(*) AS n FROM outbox WHERE state IN ('PENDING','INFLIGHT','FAILED','UNKNOWN')")
+		count, e := tx.One("SELECT COUNT(*) AS n FROM active_outbox WHERE state IN ('PENDING','INFLIGHT','FAILED','UNKNOWN')")
 		if e != nil {
 			return e
 		}
@@ -431,7 +431,7 @@ func (s *Service) Rows(kind, id string, limit, offset int) (any, error) {
 	case "audit":
 		return s.DB.Query("SELECT * FROM audit ORDER BY id DESC LIMIT ? OFFSET ?", limit, offset)
 	case "outbox":
-		return s.DB.Query("SELECT * FROM outbox ORDER BY id DESC LIMIT ? OFFSET ?", limit, offset)
+		return s.DB.Query("SELECT o.*,COALESCE(b.bot_id,0) AS bot_id,CASE WHEN COALESCE(b.bot_id,0)=COALESCE((SELECT CAST(value AS INTEGER) FROM meta WHERE key='bot_id'),0) THEN 1 ELSE 0 END AS active_bot FROM outbox o LEFT JOIN outbox_bots b ON b.outbox_id=o.id ORDER BY o.id DESC LIMIT ? OFFSET ?", limit, offset)
 	case "bets":
 		rows, e := s.DB.Query("SELECT * FROM bets WHERE account_id=? ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?", id, limit, offset)
 		out := []Bet{}

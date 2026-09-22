@@ -38,6 +38,9 @@ func (s *Service) RateLimitOutbox(item OutboxItem, seconds int64) (int64, error)
 		if _, err = tx.Exec("INSERT INTO meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", sendPauseKey, fmt.Sprint(until)); err != nil {
 			return err
 		}
+		if _, err = tx.Exec("UPDATE bot_sessions SET pause_until=? WHERE bot_id=(SELECT CAST(value AS INTEGER) FROM meta WHERE key='bot_id')", until); err != nil {
+			return err
+		}
 		_, err = tx.Exec("UPDATE outbox SET state='PENDING',next_at=?,last_error='Telegram限流，发送端统一等待后重试' WHERE id=? AND state='INFLIGHT'", until, item.ID)
 		return err
 	})

@@ -237,11 +237,11 @@ func (s *Service) ClaimOutbox() (*OutboxItem, error) {
 		if e != nil || until > now() {
 			return e
 		}
-		row, e := tx.One(`SELECT o.* FROM outbox o WHERE o.state='PENDING' AND o.next_at<=?
-		 AND NOT EXISTS (SELECT 1 FROM outbox p WHERE p.chat_id=o.chat_id AND p.id<o.id AND p.state!='SENT'
+		row, e := tx.One(`SELECT o.* FROM active_outbox o WHERE o.state='PENDING' AND o.next_at<=?
+		 AND NOT EXISTS (SELECT 1 FROM active_outbox p WHERE p.chat_id=o.chat_id AND p.id<o.id AND p.state!='SENT'
 		 AND (COALESCE(json_extract(CASE WHEN json_valid(p.payload) THEN p.payload ELSE '{}' END,'$.group_action'),'')='')=(COALESCE(json_extract(CASE WHEN json_valid(o.payload) THEN o.payload ELSE '{}' END,'$.group_action'),'')='')
 		 AND NOT (COALESCE(json_extract(CASE WHEN json_valid(p.payload) THEN p.payload ELSE '{}' END,'$.group_action'),'')='mute' AND p.state IN ('FAILED','UNKNOWN')))
-		 AND NOT EXISTS (SELECT 1 FROM outbox p WHERE p.chat_id=o.chat_id AND p.state='SENT' AND p.next_at>?)
+		 AND NOT EXISTS (SELECT 1 FROM active_outbox p WHERE p.chat_id=o.chat_id AND p.state='SENT' AND p.next_at>?)
 		 ORDER BY CASE WHEN COALESCE(json_extract(CASE WHEN json_valid(o.payload) THEN o.payload ELSE '{}' END,'$.group_action'),'')!='' THEN 0 ELSE 1 END,o.id LIMIT 1`, now(), now())
 		if e != nil || row == nil {
 			return e
@@ -288,7 +288,7 @@ func (s *Service) CompleteOutbox(item OutboxItem, state string, messageID int64,
 	})
 }
 func (s *Service) ResolveOutbox(tx *sqlite.Tx, id int64, action string, messageID int64) (any, error) {
-	row, e := tx.One("SELECT * FROM outbox WHERE id=?", id)
+	row, e := tx.One("SELECT * FROM active_outbox WHERE id=?", id)
 	if e != nil {
 		return nil, e
 	}

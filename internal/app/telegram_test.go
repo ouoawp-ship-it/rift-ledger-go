@@ -189,7 +189,7 @@ func TestOutboxOrderingCardReuseAndUnknownRecovery(t *testing.T) {
 	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.ResolveOutbox(tx, item.ID, "ack", 0) })
 	exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.ResolveOutbox(tx, item.ID, "ack", 43) })
 }
-func TestBotIdentityCannotBeSilentlyChanged(t *testing.T) {
+func TestBotIdentityCanBeSwitchedWithoutChangingLedger(t *testing.T) {
 	s, _ := fixture(t, "settlement", "refund", "fees")
 	if e := s.BindBot(123); e != nil {
 		t.Fatal(e)
@@ -197,8 +197,14 @@ func TestBotIdentityCannotBeSilentlyChanged(t *testing.T) {
 	if e := s.BindBot(123); e != nil {
 		t.Fatal(e)
 	}
-	if e := s.BindBot(456); e == nil {
-		t.Fatal("changed bot accepted")
+	if e := s.BindBot(456); e != nil {
+		t.Fatal(e)
+	}
+	if e := s.BindBot(123); e != nil {
+		t.Fatal(e)
+	}
+	if got := acc(t, s, "tg:111").Balance; got != Points(1000) {
+		t.Fatalf("switch changed player ledger: %d", got)
 	}
 }
 func TestDisabledAccountStillSettles(t *testing.T) {

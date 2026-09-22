@@ -53,7 +53,7 @@ func ParseBet(text string) (int, Money, bool) {
 	return p, a, e == nil
 }
 func (s *Service) Offset() (int64, error) {
-	rows, e := s.DB.Query("SELECT value FROM meta WHERE key='tg_offset'")
+	rows, e := s.DB.Query("SELECT COALESCE((SELECT offset FROM bot_sessions WHERE bot_id=(SELECT CAST(value AS INTEGER) FROM meta WHERE key='bot_id')),(SELECT value FROM meta WHERE key='tg_offset'),'0') AS value")
 	if e != nil || len(rows) == 0 {
 		return 0, e
 	}
@@ -66,20 +66,6 @@ func (s *Service) BotStatus(text string) error {
 		return e
 	})
 }
-func (s *Service) BindBot(botID int64) error {
-	return s.DB.Transaction(func(tx *sqlite.Tx) error {
-		row, e := tx.One("SELECT value FROM meta WHERE key='bot_id'")
-		if e != nil {
-			return e
-		}
-		v := strconv.FormatInt(botID, 10)
-		if row != nil && row["value"] != v {
-			return conflict("该数据库属于另一个机器人；拒绝继承其更新偏移和待发消息")
-		}
-		_, e = tx.Exec("INSERT OR IGNORE INTO meta(key,value) VALUES('bot_id',?)", v)
-		return e
-	})
-}
 
 // HandleUpdate commits the update ID, any accepted bet, its ledger effects and
 // replies together. Rejected bets are also consumed, so replay cannot make a
@@ -87,11 +73,18 @@ func (s *Service) BindBot(botID int64) error {
 // private callbacks are routed; edited messages never modify accepted orders.
 func (s *Service) HandleUpdate(u TGUpdate) (err error) {
 	started := time.Now()
-	defer func() { s.recordUpdate(u.ID, started, err); s.NotifyOutbox() }()
+	rawID := u.ID
+	defer func() { s.recordUpdate(rawID, started, err); s.NotifyOutbox() }()
 	if u.ID < 0 {
 		return bad("无效更新ID")
 	}
 	return s.DB.Transaction(func(tx *sqlite.Tx) error {
+		// Telegram update IDs are unique only within one bot. The internal ID
+		// also isolates balance request and outbox deduplication keys.
+		var e error
+		if u.ID, e = scopedUpdateID(tx, rawID); e != nil {
+			return e
+		}
 		old, e := tx.One("SELECT id FROM tg_updates WHERE id=?", u.ID)
 		if e != nil {
 			return e
@@ -221,7 +214,10 @@ func (s *Service) HandleUpdate(u TGUpdate) (err error) {
 		if _, e = tx.Exec("INSERT INTO tg_updates(id,created_at) VALUES(?,?)", u.ID, now()); e != nil {
 			return e
 		}
-		_, e = tx.Exec("INSERT INTO meta(key,value) VALUES('tg_offset',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", strconv.FormatInt(u.ID+1, 10))
+		_, e = tx.Exec("INSERT INTO meta(key,value) VALUES('tg_offset',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", strconv.FormatInt(rawID+1, 10))
+		if e == nil {
+			_, e = tx.Exec("UPDATE bot_sessions SET offset=? WHERE bot_id=(SELECT CAST(value AS INTEGER) FROM meta WHERE key='bot_id')", rawID+1)
+		}
 		return e
 	})
 }

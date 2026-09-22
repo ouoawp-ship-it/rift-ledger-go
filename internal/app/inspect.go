@@ -74,7 +74,7 @@ func InspectDatabase(db *sqlite.DB) (map[string]any, error) {
 			}
 			out["daily_total_issues"] = dailyIssues
 		}
-		queue, e := tx.Query("SELECT state,COUNT(*) AS count FROM outbox GROUP BY state")
+		queue, e := tx.Query("SELECT state,COUNT(*) AS count FROM active_outbox GROUP BY state")
 		if e != nil {
 			return e
 		}
