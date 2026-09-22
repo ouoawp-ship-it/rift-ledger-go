@@ -44,6 +44,7 @@ function controls(){
  $('create-round').disabled=!!r;$('save-heroes').disabled=st!=='DRAFT';$('open-round').disabled=st!=='DRAFT';$('close-round').disabled=st!=='OPEN';$('preview').disabled=st!=='CLOSED';$('settle').disabled=st!=='CLOSED'||!previewData;
  $('number').disabled=!!r&&st!=='DRAFT';
  document.querySelectorAll('#hero-inputs input').forEach(x=>x.disabled=st!=='DRAFT');
+ if(typeof syncHeroPicker==='function')syncHeroPicker();
  document.querySelectorAll('#damage-inputs input').forEach(x=>x.disabled=st!=='CLOSED');
 }
 async function refreshState(force=false){
@@ -105,10 +106,7 @@ function championMatches(query){
    return aStarts-bStarts||aName.localeCompare(bName,'zh-CN');
   });
 }
-function chooseChampion(n,c){$('hero-id-'+n).value=c.id;$('hero-search-'+n).value=c.name+'（'+c.english_name+'）';$('hero-name-'+n).value=c.name;setChampionAvatar(n,c.id);$('hero-results-'+n).replaceChildren()}
-function showChampionResults(n){const box=$('hero-results-'+n);box.replaceChildren();for(const c of championMatches($('hero-search-'+n).value)){const b=document.createElement('button');b.type='button';b.className='champion-option';b.innerHTML='<img src="'+esc(c.image_url)+'" alt=""><span>'+esc(c.name)+'<small>'+(c.title?esc(c.title)+' · ':'')+esc(c.english_name)+' · '+esc(c.id)+'</small></span>';b.addEventListener('click',()=>chooseChampion(n,c));box.appendChild(b)}}
-$('hero-inputs').innerHTML=Array.from({length:5},(_,i)=>{const n=i+1;return '<tr><td>'+n+'号</td><td class="champion-picker"><input type="hidden" id="hero-id-'+n+'"><input type="search" id="hero-search-'+n+'" autocomplete="off" maxlength="40" placeholder="输入亚、Yasuo或ys"><div class="champion-results" id="hero-results-'+n+'"></div></td><td><input type="text" id="hero-name-'+n+'" readonly placeholder="从搜索结果选择"><img class="champion-avatar" id="hero-avatar-'+n+'" alt="已选英雄头像" hidden></td><td><label><input type="radio" name="banker" id="banker-'+n+'" value="'+n+'">选为庄家</label></td></tr>';}).join('');
-for(let n=1;n<=5;n++){$('hero-search-'+n).addEventListener('input',()=>{$('hero-id-'+n).value='';$('hero-name-'+n).value='';setChampionAvatar(n,'');showChampionResults(n)});$('hero-search-'+n).addEventListener('focus',()=>showChampionResults(n));}
+$('hero-inputs').innerHTML=Array.from({length:5},(_,i)=>{const n=i+1;return '<section class="hero-slot" id="hero-slot-'+n+'"><div class="hero-slot-heading"><span>'+n+'号英雄</span><span class="hero-role" id="hero-role-'+n+'">未选庄家</span></div><input type="hidden" id="hero-id-'+n+'"><input type="hidden" id="hero-search-'+n+'"><input type="hidden" id="hero-name-'+n+'"><button class="hero-select" id="hero-select-'+n+'" type="button" data-hero-slot="'+n+'" aria-haspopup="dialog"><span class="hero-portrait"><img id="hero-avatar-'+n+'" alt="" hidden><span aria-hidden="true">＋</span></span><strong id="hero-label-'+n+'">选择英雄</strong><small id="hero-subtitle-'+n+'">点击搜索或浏览头像</small></button><label class="hero-banker"><input type="radio" name="banker" id="banker-'+n+'" value="'+n+'">设为庄家</label></section>';}).join('');
 $('damage-inputs').innerHTML=Array.from({length:5},(_,i)=>'<label>'+(i+1)+'号原始伤害<input id="damage-'+(i+1)+'" inputmode="numeric" maxlength="6" placeholder="不要人为补零"><span class="damage-result" id="damage-result-'+(i+1)+'">等待输入</span></label>').join('');
 $('odds-inputs').innerHTML=Array.from({length:11},(_,i)=>{const label=i===0?'没牛':i===10?'牛牛':'牛'+i;return '<label class="odds-card"><span>'+label+'</span><span class="odds-input"><input id="odd-'+i+'" type="number" min="0" max="100" step="0.01" required><em>倍</em></span></label>';}).join('');
 document.querySelectorAll('#damage-inputs input').forEach((x,i)=>x.addEventListener('input',()=>{invalidatePreview();$('damage-result-'+(i+1)).textContent=damageLabel(x.value)}));
