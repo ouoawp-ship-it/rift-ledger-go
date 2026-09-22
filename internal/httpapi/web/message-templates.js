@@ -14,8 +14,8 @@
  function preview(rendered){
   if(!current)return;
   const values=Object.fromEntries(current.variables.map(v=>[v.name,v.example]));
-  const parts=rendered||blocks.map(b=>b.type==='text'?{...b,text:b.text.replace(/\{([^{}\n]+)\}/g,(m,k)=>values[k]??m)}:b);
-  $('template-preview').innerHTML=parts.map(b=>b.type==='image'?'<div class="message-bubble image-bubble"><img data-image="'+esc(b.image_id)+'" alt="自定义推送图片"></div>':'<div class="message-bubble">'+esc(b.text||'在左侧输入消息内容…')+'</div>').join('');
+  const parts=rendered||layoutMessageBlocks(blocks.map(b=>b.type==='text'?{...b,text:b.text.replace(/\{([^{}\n]+)\}/g,(m,k)=>values[k]??m)}:b));
+  $('template-preview').innerHTML=parts.map(b=>b.type==='image'?'<div class="message-bubble image-bubble"><img data-image="'+esc(b.image_id)+'" alt="自定义推送图片">'+(b.text?'<div class="message-caption">'+esc(b.text)+'</div>':'')+'</div>':'<div class="message-bubble">'+esc(b.text||'在左侧输入消息内容…')+'</div>').join('');
   hydrateImages($('template-preview'));
  }
  function render(){
@@ -55,7 +55,9 @@
   if(blocks.length>=8||blocks.filter(b=>b.type==='image').length>=3)throw new Error('最多8个内容段落，其中最多3张图片');
   if(file.size>2*1024*1024)throw new Error('图片不能超过2MB');
   const {response,result}=await requestJSON('message-images',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':file.type},body:file},true,45000);
-  if(!response.ok||!result.ok)throw new Error(result.error||'图片上传失败');blocks.push({type:'image',image_id:result.data.id});mark();render();
+  if(!response.ok||!result.ok)throw new Error(result.error||'图片上传失败');
+  const index=blocks[focusIndex]?.type==='text'?focusIndex:blocks.length;
+  blocks.splice(index,0,{type:'image',image_id:result.data.id});focusIndex=index+1;mark();render();
  });};
  $('template-default').onclick=()=>{if(!current||working||!confirm('恢复此类消息的默认内容？点击保存设置后才会生效。'))return;blocks=copy(current.defaults);mark();render();};
  $('template-reload').onclick=()=>{if(dirty&&!confirm('重新载入会丢弃未保存的修改，是否继续？'))return;run(()=>load(true));};

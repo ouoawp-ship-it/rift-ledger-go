@@ -439,6 +439,12 @@ func (c *Client) sendMedia(ctx context.Context, s *app.Service, item app.OutboxI
 	if e == nil {
 		if item.Payload.ImageID == "" {
 			_ = writer.WriteField("caption", item.Payload.Text)
+		} else if item.Payload.Caption != "" {
+			_ = writer.WriteField("caption", item.Payload.Caption)
+		}
+		if item.Payload.Markup != nil {
+			markup, _ := json.Marshal(item.Payload.Markup)
+			_ = writer.WriteField("reply_markup", string(markup))
 		}
 		_ = writer.WriteField("chat_id", fmt.Sprint(item.Payload.ChatID))
 		_ = writer.Close()
@@ -485,6 +491,13 @@ func (c *Client) sendMedia(ctx context.Context, s *app.Service, item app.OutboxI
 		detail += "：" + ae.Error()
 	}
 	if item.Payload.ImageID != "" {
+		if item.Payload.Caption != "" {
+			detail = "图文消息" + map[string]string{"FAILED": "发送失败", "UNKNOWN": "发送结果未知"}[state] + "；请核实群消息后在发送记录处理。"
+			if ae != nil {
+				detail += " " + ae.Error()
+			}
+			return true, persistDelivery(func() error { return s.CompleteMedia(item, state, 0, detail, state, 0) })
+		}
 		detail = "自定义图片" + map[string]string{"FAILED": "发送失败", "UNKNOWN": "结果未知"}[state] + "；已继续后续文字，请在群内核实。"
 		if ae != nil {
 			detail += " " + ae.Error()

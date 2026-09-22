@@ -88,6 +88,9 @@ func readTemplate(tx *sqlite.Tx, id string) (MessageTemplate, error) {
 	}
 	if row != nil {
 		d.Revision = row.Int("revision")
+		// Decode into fresh blocks: otherwise an image in slot 0 inherits the
+		// default text field when its JSON omits "text".
+		d.Blocks = nil
 		if err = json.Unmarshal([]byte(row["blocks"]), &d.Blocks); err != nil {
 			return d, err
 		}
@@ -200,7 +203,7 @@ func (s *Service) PreviewMessageTemplate(p TemplatePatch) (any, error) {
 		for _, v := range d.Variables {
 			values[v.Name] = v.Example
 		}
-		out = renderBlocks(p.Blocks, values)
+		out = layoutMessageBlocks(renderBlocks(p.Blocks, values))
 		return nil
 	})
 	return out, err
@@ -225,7 +228,7 @@ func (s *Service) queueTemplate(tx *sqlite.Tx, key string, chat int64, kind stri
 			return fmt.Errorf("消息 %s 缺少变量 %s", kind, v.Name)
 		}
 	}
-	parts := renderBlocks(d.Blocks, values)
+	parts := layoutMessageBlocks(renderBlocks(d.Blocks, values))
 	index := 0
 	for _, b := range parts {
 		chunks := []string{b.Text}
@@ -239,7 +242,12 @@ func (s *Service) queueTemplate(tx *sqlite.Tx, key string, chat int64, kind stri
 			}
 			index++
 			if b.Type == "image" {
-				p := MessagePayload{ChatID: chat, Text: "自定义消息图片", ImageID: b.ImageID}
+				p := MessagePayload{ChatID: chat, Text: b.Text, Caption: b.Text, ImageID: b.ImageID}
+				if b.Text == "" {
+					p.Text = "自定义消息图片"
+				} else {
+					p.Markup = s.messageKeyboard(chat, buttons)
+				}
 				if _, err = tx.Exec("INSERT INTO outbox(key,chat_id,payload,created_at) VALUES(?,?,?,?)", partKey, chat, asJSON(p), now()); err != nil {
 					return err
 				}
@@ -250,7 +258,42 @@ func (s *Service) queueTemplate(tx *sqlite.Tx, key string, chat int64, kind stri
 	}
 	return nil
 }
+
+// An image and its following text blocks are one Telegram photo message.
+// Split only after variable expansion; preserve every character and block order.
+func layoutMessageBlocks(blocks []MessageBlock) []MessageBlock {
+	out := make([]MessageBlock, 0, len(blocks))
+	for i := 0; i < len(blocks); i++ {
+		b := blocks[i]
+		if b.Type != "image" {
+			for _, text := range splitMessage(b.Text) {
+				out = append(out, MessageBlock{Type: "text", Text: text})
+			}
+			continue
+		}
+		var texts []string
+		for i+1 < len(blocks) && blocks[i+1].Type == "text" {
+			i++
+			texts = append(texts, blocks[i].Text)
+		}
+		caption := strings.Join(texts, "\n\n")
+		chunks := splitMessageLimit(caption, 1024)
+		if len(chunks) > 0 {
+			b.Text = chunks[0]
+		}
+		out = append(out, b)
+		if len(chunks) > 1 {
+			for _, text := range splitMessage(strings.Join(chunks[1:], "")) {
+				out = append(out, MessageBlock{Type: "text", Text: text})
+			}
+		}
+	}
+	return out
+}
 func splitMessage(text string) []string {
+	return splitMessageLimit(text, 4000)
+}
+func splitMessageLimit(text string, limit int) []string {
 	var out []string
 	var b strings.Builder
 	units := 0
@@ -259,7 +302,7 @@ func splitMessage(text string) []string {
 		if r > 0xffff {
 			size = 2
 		}
-		if units+size > 4000 {
+		if units+size > limit {
 			out = append(out, b.String())
 			b.Reset()
 			units = 0

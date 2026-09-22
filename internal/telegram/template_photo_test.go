@@ -93,3 +93,65 @@ func TestCustomPhotoSequenceAndFailureIsolation(t *testing.T) {
 		})
 	}
 }
+
+func TestCombinedPhotoCaptionDelivery(t *testing.T) {
+	for _, mode := range []string{"success", "rejected", "unknown", "limited"} {
+		t.Run(mode, func(t *testing.T) {
+			s := svc(t)
+			var data bytes.Buffer
+			_ = png.Encode(&data, image.NewRGBA(image.Rect(0, 0, 16, 16)))
+			asset, err := s.SaveMessageImage(data.Bytes())
+			if err != nil {
+				t.Fatal(err)
+			}
+			caption := "2026-09-22-0001期\n已封盘 🔔\n最低20.001"
+			markup := &app.Keyboard{Rows: [][]app.Button{{{Text: "查看", URL: "https://t.me/example_bot"}}}}
+			payload, _ := json.Marshal(app.MessagePayload{ChatID: 123, Text: caption, Caption: caption, ImageID: asset.(map[string]any)["id"].(string), Markup: markup})
+			_, err = s.DB.Exec("INSERT INTO outbox(key,chat_id,payload,created_at) VALUES('caption',123,?,1)", string(payload))
+			if err != nil {
+				t.Fatal(err)
+			}
+			calls := 0
+			c := mockClient(t, func(w http.ResponseWriter, r *http.Request) {
+				calls++
+				if !strings.HasSuffix(r.URL.Path, "/sendPhoto") {
+					t.Error("expected a single sendPhoto")
+				}
+				if err := r.ParseMultipartForm(3 << 20); err != nil {
+					t.Error(err)
+					return
+				}
+				defer r.MultipartForm.RemoveAll()
+				if r.FormValue("caption") != caption || !strings.Contains(r.FormValue("reply_markup"), "example_bot") {
+					t.Error("caption or buttons missing")
+				}
+				switch mode {
+				case "rejected":
+					w.WriteHeader(400)
+					_, _ = w.Write([]byte(`{"ok":false,"error_code":400,"description":"bad photo"}`))
+				case "unknown":
+					_, _ = w.Write([]byte(`{"ok":`))
+				case "limited":
+					w.WriteHeader(429)
+					_, _ = w.Write([]byte(`{"ok":false,"error_code":429,"parameters":{"retry_after":20}}`))
+				default:
+					_, _ = w.Write([]byte(`{"ok":true,"result":{"message_id":88}}`))
+				}
+			})
+			if sent, err := c.SendOne(context.Background(), s); !sent || err != nil {
+				t.Fatal(sent, err)
+			}
+			rows, _ := s.DB.Query("SELECT state,message_id FROM outbox WHERE key='caption'")
+			want := map[string]string{"success": "SENT", "rejected": "FAILED", "unknown": "UNKNOWN", "limited": "PENDING"}[mode]
+			if len(rows) != 1 || rows[0]["state"] != want {
+				t.Fatal(rows)
+			}
+			if sent, err := c.SendOne(context.Background(), s); sent || err != nil {
+				t.Fatal("duplicate or unwanted fallback", sent, err)
+			}
+			if calls != 1 {
+				t.Fatal(calls)
+			}
+		})
+	}
+}

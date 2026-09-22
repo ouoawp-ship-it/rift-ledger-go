@@ -112,7 +112,7 @@ func initialize(db *sqlite.DB) error {
 		}
 		// An interrupted network send is NOT blindly sent a second time.
 		// Decorative custom photos must not hold the following business text hostage.
-		if _, e = tx.Exec("UPDATE outbox SET state='SENT',media_result='UNKNOWN',last_error='重启时自定义图片结果未知；已继续后续文字，请在群内核实' WHERE state='INFLIGHT' AND COALESCE(json_extract(CASE WHEN json_valid(payload) THEN payload ELSE '{}' END,'$.image_id'),'')!=''"); e != nil {
+		if _, e = tx.Exec("UPDATE outbox SET state='SENT',media_result='UNKNOWN',last_error='重启时自定义图片结果未知；已继续后续文字，请在群内核实' WHERE state='INFLIGHT' AND COALESCE(json_extract(CASE WHEN json_valid(payload) THEN payload ELSE '{}' END,'$.image_id'),'')!='' AND COALESCE(json_extract(CASE WHEN json_valid(payload) THEN payload ELSE '{}' END,'$.caption'),'')=''"); e != nil {
 			return e
 		}
 		_, e = tx.Exec("UPDATE outbox SET state='UNKNOWN',last_error='进程重启时发现发送中任务；请核实Telegram后处理' WHERE state='INFLIGHT'")

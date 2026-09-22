@@ -48,7 +48,7 @@ func TestTemplateValidationAndSnapshots(t *testing.T) {
 	expectFailure(t, s, func(tx *sqlite.Tx) (any, error) { return s.SaveMessageTemplate(tx, p) })
 	exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.CloseRound(tx, r.ID) })
 	rows, e := s.DB.Query("SELECT key,payload FROM outbox WHERE key LIKE 'round-close:%' ORDER BY id")
-	if e != nil || len(rows) != 3 {
+	if e != nil || len(rows) != 2 {
 		t.Fatal(rows, e)
 	}
 	if !strings.Contains(rows[0]["payload"], r.Number+"期") || strings.Contains(rows[0]["payload"], "{当前期数}") {
@@ -56,7 +56,7 @@ func TestTemplateValidationAndSnapshots(t *testing.T) {
 	}
 	var photo MessagePayload
 	_ = json.Unmarshal([]byte(rows[1]["payload"]), &photo)
-	if photo.ImageID != imageID {
+	if photo.ImageID != imageID || photo.Caption != "请等待开奖 🎉" || photo.Text != photo.Caption {
 		t.Fatal(photo)
 	}
 	p.Revision = 1
@@ -84,13 +84,17 @@ func TestTemplateValidationAndSnapshots(t *testing.T) {
 	if e != nil || item == nil || item.Payload.ImageID != imageID {
 		t.Fatal(item, e)
 	}
-	// Restart after an ambiguous photo upload never resends it or blocks the text.
+	// An interrupted photo now contains business text: retain UNKNOWN for review.
 	if e = initialize(s.DB); e != nil {
 		t.Fatal(e)
 	}
 	item, e = s.ClaimOutbox()
-	if e != nil || item == nil || item.Payload.Text != "请等待开奖 🎉" {
-		t.Fatal("restart blocked subsequent text", item, e)
+	if e != nil || item != nil {
+		t.Fatal("restart must not replay combined message", item, e)
+	}
+	unknown, _ := s.DB.Query("SELECT state FROM outbox WHERE key=?", rows[1]["key"])
+	if len(unknown) != 1 || unknown[0]["state"] != "UNKNOWN" {
+		t.Fatal("caption was silently discarded", unknown)
 	}
 }
 func TestTemplateCatalogAndLiteralValues(t *testing.T) {

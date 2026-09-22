@@ -19,6 +19,7 @@ type Keyboard struct {
 }
 type MessagePayload struct {
 	ImageID     string       `json:"image_id,omitempty"`
+	Caption     string       `json:"caption,omitempty"`
 	GroupAction string       `json:"group_action,omitempty"`
 	RoundID     string       `json:"round_id,omitempty"`
 	Media       []MediaPhoto `json:"media,omitempty"`
@@ -72,7 +73,12 @@ func (s *Service) queue(tx *sqlite.Tx, key string, chat int64, cardKey, text str
 	if chat == 0 {
 		return nil
 	}
-	p := MessagePayload{ChatID: chat, Text: text}
+	p := MessagePayload{ChatID: chat, Text: text, Markup: s.messageKeyboard(chat, groupButtons)}
+	_, e := tx.Exec("INSERT OR IGNORE INTO outbox(key,chat_id,card_key,payload,created_at) VALUES(?,?,?,?,?)", key, chat, cardKey, asJSON(p), now())
+	return e
+}
+func (s *Service) messageKeyboard(chat int64, groupButtons bool) *Keyboard {
+	p := MessagePayload{}
 	if chat == s.Config.GroupID {
 		if groupButtons && s.Config.BotUsername != "" {
 			base := "https://t.me/" + s.Config.BotUsername
@@ -84,8 +90,7 @@ func (s *Service) queue(tx *sqlite.Tx, key string, chat int64, cardKey, text str
 			p.Markup.Rows = append(p.Markup.Rows, []Button{{Text: "联系客服", URL: "https://t.me/" + s.Config.SupportUsername}})
 		}
 	}
-	_, e := tx.Exec("INSERT OR IGNORE INTO outbox(key,chat_id,card_key,payload,created_at) VALUES(?,?,?,?,?)", key, chat, cardKey, asJSON(p), now())
-	return e
+	return p.Markup
 }
 func (s *Service) roundCard(tx *sqlite.Tx, r Round, heading string) error {
 	if s.Config.GroupID == 0 {
