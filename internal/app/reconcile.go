@@ -1,7 +1,6 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
 	"riftledger/internal/sqlite"
 )
@@ -39,11 +38,11 @@ func reconcileTx(tx *sqlite.Tx, playerOnly bool) (any, error) {
 			continue
 		}
 		pendingBets++
-		var rules Rules
-		if e = json.Unmarshal([]byte(b["rules"]), &rules); e != nil {
+		rules, e := decodeRules(b["rules"])
+		if e != nil {
 			return nil, e
 		}
-		reserve := moneyRow(b, "stake")
+		reserve := riskFor(moneyRow(b, "stake"), rules.MaxLossMultiplier())
 		if !playerOnly && rules.FeeTiming == "settlement" {
 			reserve += moneyRow(b, "fee")
 		}

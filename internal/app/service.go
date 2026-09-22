@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -132,13 +133,29 @@ func getRules(tx *sqlite.Tx) (Rules, int64, error) {
 	if e != nil {
 		return Rules{}, 0, e
 	}
-	var r Rules
-	if e = json.Unmarshal([]byte(row["rules"]), &r); e != nil {
+	r, e := decodeRules(row["rules"])
+	if e != nil {
 		return r, 0, e
 	}
 	return r, row.Int("version"), nil
 }
+func decodeRules(raw string) (Rules, error) {
+	var r Rules
+	b := []byte(raw)
+	if e := json.Unmarshal(b, &r); e != nil {
+		return r, e
+	}
+	// Rules written before per-bull loss multipliers are treated as the old
+	// fixed one-times loss policy. An explicit configured 0 remains intact.
+	if !bytes.Contains(b, []byte(`"loss_multiplier"`)) {
+		r.LossMultiplier = append([]float64(nil), DefaultRules().LossMultiplier...)
+	}
+	return r, nil
+}
 func (s *Service) SaveRules(tx *sqlite.Tx, expected int64, r Rules) (any, error) {
+	if len(r.LossMultiplier) == 0 {
+		r.LossMultiplier = append([]float64(nil), DefaultRules().LossMultiplier...)
+	}
 	if e := r.Validate(); e != nil {
 		return nil, e
 	}
@@ -172,8 +189,10 @@ func roundFrom(row sqlite.Row) (Round, error) {
 	if e := json.Unmarshal([]byte(row["heroes"]), &r.Heroes); e != nil {
 		return r, e
 	}
-	if e := json.Unmarshal([]byte(row["rules"]), &r.Rules); e != nil {
+	if rules, e := decodeRules(row["rules"]); e != nil {
 		return r, e
+	} else {
+		r.Rules = rules
 	}
 	if row["result"] != "" {
 		var p Preview

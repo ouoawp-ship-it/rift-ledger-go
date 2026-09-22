@@ -32,32 +32,56 @@ func PublicError(e error) (int, string) {
 }
 
 type Rules struct {
-	Confirmed    bool      `json:"confirmed"`
-	Payout       []float64 `json:"payout"`
-	MinStake     Money     `json:"min_stake"`
-	MaxStake     Money     `json:"max_stake"`
-	FeeTiming    string    `json:"fee_timing"`    // acceptance or settlement; explicit operator confirmation
-	VoidFee      string    `json:"void_fee"`      // refund or charge
-	FeeRecipient string    `json:"fee_recipient"` // fees or house
-	ZeroTriple   bool      `json:"zero_triple"`
+	Confirmed      bool      `json:"confirmed"`
+	Payout         []float64 `json:"payout"`
+	LossMultiplier []float64 `json:"loss_multiplier"`
+	MinStake       Money     `json:"min_stake"`
+	MaxStake       Money     `json:"max_stake"`
+	FeeTiming      string    `json:"fee_timing"`    // acceptance or settlement; explicit operator confirmation
+	VoidFee        string    `json:"void_fee"`      // refund or charge
+	FeeRecipient   string    `json:"fee_recipient"` // fees or house
+	ZeroTriple     bool      `json:"zero_triple"`
 }
 
 func DefaultRules() Rules {
-	return Rules{Confirmed: false, Payout: []float64{1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 4}, MinStake: Points(20), MaxStake: Points(300), ZeroTriple: true}
+	return Rules{Confirmed: false, Payout: []float64{1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 4}, LossMultiplier: []float64{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, MinStake: Points(20), MaxStake: Points(300), ZeroTriple: true}
 }
 func (r Rules) Validate() error {
 	if len(r.Payout) != 11 {
 		return bad("赔率必须包含没牛至牛牛共11项")
+	}
+	if len(r.LossMultiplier) != 11 {
+		return bad("闲家失败净亏损倍数必须包含没牛至牛牛共11项")
 	}
 	for _, v := range r.Payout {
 		if _, err := payoutHundredths(v); err != nil {
 			return bad("每项赔率必须为0至100之间、最多两位小数的净盈利倍数")
 		}
 	}
+	for _, v := range r.LossMultiplier {
+		if _, err := payoutHundredths(v); err != nil {
+			return bad("闲家失败净亏损倍数必须为0至100之间、最多两位小数")
+		}
+	}
 	if r.MinStake < 1 || r.MaxStake < r.MinStake || r.MaxStake > Points(1_000_000) {
 		return bad("下注限额必须为0.001至1000000积分、最多三位小数，且最低不超过最高")
 	}
 	return nil
+}
+func (r Rules) LossMultiplierFor(rank int) float64 {
+	if rank < 0 || rank >= len(r.LossMultiplier) {
+		return 1
+	}
+	return r.LossMultiplier[rank]
+}
+func (r Rules) MaxLossMultiplier() float64 {
+	max := float64(0)
+	for _, v := range r.LossMultiplier {
+		if v > max {
+			max = v
+		}
+	}
+	return max
 }
 func (r Rules) MaxPayout() float64 {
 	m := float64(0)

@@ -61,7 +61,7 @@ curl -sS http://127.0.0.1:8080/api/calculate \
 规则示例（仅是测试选择，生产应由操作者确认）：
 
 ```json
-{"expected_version":1,"rules":{"confirmed":true,"payout":[1,1,1,1,1,1,1,2,2,3,4],"min_stake":20,"max_stake":300,"fee_timing":"settlement","void_fee":"refund","fee_recipient":"fees","zero_triple":true}}
+{"expected_version":1,"rules":{"confirmed":true,"payout":[1,1,1,1,1,1,1,2,2,3,4],"loss_multiplier":[1,1,1,1,1,1,1,1,1,1,1],"min_stake":20,"max_stake":300,"fee_timing":"settlement","void_fee":"refund","fee_recipient":"fees","zero_triple":true}}
 ```
 
 `expected_version` 必须从真实state读取，不硬编码1用于已经运行的库。可运行的完整接口调用样例见 `scripts/smoke.py`：它只建立临时数据库、随机密钥和回环端口，不读取.env或向真实Telegram发消息。

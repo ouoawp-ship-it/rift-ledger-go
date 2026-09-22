@@ -226,8 +226,8 @@ func (s *Service) PlaceBet(tx *sqlite.Tx, in BetInput) (Bet, error) {
 	if !s.PlayerOnly {
 		charge = fee(in.Stake)
 	}
-	if a.Available < in.Stake {
-		return empty, bad("可用积分不足以覆盖下注本金")
+	if a.Available < riskFor(in.Stake, r.Rules.MaxLossMultiplier()) {
+		return empty, bad("可用积分不足以覆盖本期可能的亏损")
 	}
 	if !s.PlayerOnly {
 		house, e := getAccount(tx, "house")
@@ -243,7 +243,7 @@ func (s *Service) PlaceBet(tx *sqlite.Tx, in BetInput) (Bet, error) {
 	if _, e = tx.Exec("INSERT INTO bets(id,round_id,account_id,position,stake,fee,state,created_at) VALUES(?,?,?,?,?,?,'RESERVED',?)", b.ID, r.ID, a.ID, in.Position, in.Stake, charge, b.CreatedAt); e != nil {
 		return empty, e
 	}
-	reserve := in.Stake
+	reserve := riskFor(in.Stake, r.Rules.MaxLossMultiplier())
 	if !s.PlayerOnly && r.Rules.FeeTiming == "settlement" {
 		reserve += charge
 	} else if !s.PlayerOnly {
@@ -342,8 +342,8 @@ func makePreview(tx *sqlite.Tx, r Round, in SettleInput) (Preview, error) {
 			line.Multiplier = r.Rules.Payout[pos.Hand.Rank]
 			line.GameDelta = profitFor(b.Stake, line.Multiplier)
 		case "LOSS":
-			line.Multiplier = 1
-			line.GameDelta = -b.Stake
+			line.Multiplier = r.Rules.LossMultiplierFor(hands[r.Banker-1].Rank)
+			line.GameDelta = -lossFor(b.Stake, line.Multiplier)
 		case "VOID":
 			if in.CancelReason != "" || r.Rules.VoidFee == "refund" || line.Fee != b.Fee {
 				line.Fee = 0
@@ -444,7 +444,7 @@ func (s *Service) Settle(tx *sqlite.Tx, id string, in SettleInput) (any, error) 
 	}
 	// Release reservations, apply transfers, save results and enqueue notices in ONE transaction.
 	for _, b := range bets {
-		reserve := b.Stake
+		reserve := riskFor(b.Stake, r.Rules.MaxLossMultiplier())
 		if !s.PlayerOnly && r.Rules.FeeTiming == "settlement" {
 			reserve += b.Fee
 		}
@@ -468,7 +468,7 @@ func (s *Service) Settle(tx *sqlite.Tx, id string, in SettleInput) (any, error) 
 			e = transfer(tx, "house", b.AccountID, l.GameDelta, "GAME", "game:"+b.ID, r.ID, b.ID, "闲家按自身牛型净盈利")
 		}
 		if l.GameDelta < 0 && !s.PlayerOnly {
-			e = transfer(tx, b.AccountID, "house", -l.GameDelta, "GAME", "game:"+b.ID, r.ID, b.ID, "闲家固定一倍本金亏损")
+			e = transfer(tx, b.AccountID, "house", -l.GameDelta, "GAME", "game:"+b.ID, r.ID, b.ID, "闲家按庄家牛型失败净亏损倍数扣减")
 		}
 		if s.PlayerOnly {
 			e = playerGameDelta(tx, b.AccountID, l.GameDelta, "game:"+b.ID, r.ID, b.ID)

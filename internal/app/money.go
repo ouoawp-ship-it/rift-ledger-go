@@ -93,6 +93,18 @@ func profitFor(stake Money, rate float64) Money {
 	// Valid stakes <= 1,000,000 points and rates <= 100: product fits int64.
 	return Money((int64(stake)*basis + 50) / 100)
 }
+func lossFor(stake Money, rate float64) Money {
+	return profitFor(stake, rate)
+}
+func riskFor(stake Money, rate float64) Money {
+	// Keep the stake reserved even when the configured loss multiplier is 0;
+	// otherwise a player could place an unlimited number of zero-risk bets.
+	loss := lossFor(stake, rate)
+	if loss > stake {
+		return loss
+	}
+	return stake
+}
 func exposureFor(stake Money, rate float64) Money {
 	basis, err := payoutHundredths(rate)
 	if err != nil {

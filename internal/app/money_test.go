@@ -47,6 +47,12 @@ func TestMoneyPrecisionAndWireCompatibility(t *testing.T) {
 	if _, err := payoutHundredths(.29); err != nil {
 		t.Fatal(err)
 	}
+	if got := lossFor(10005, 1.2); got != 12006 {
+		t.Fatalf("loss multiplier rounding = %v, want 12006", got)
+	}
+	if got := riskFor(10005, 0); got != 10005 {
+		t.Fatalf("zero loss multiplier must still reserve stake, got %v", got)
+	}
 }
 
 func TestFractionalMoneyFullLifecycle(t *testing.T) {
@@ -70,6 +76,9 @@ func TestFractionalMoneyFullLifecycle(t *testing.T) {
 			rules.Confirmed = true
 			rules.MinStake = 1
 			rules.Payout[9] = 1.23
+			// 12737 evaluates to the banker's bull-bull rank, so this also verifies
+			// that a loss uses the banker's multiplier rather than the player's.
+			rules.LossMultiplier[10] = 1.2
 			exec(t, s, func(tx *sqlite.Tx) (any, error) { return s.SaveRules(tx, 1, rules) })
 			r := exec(t, s, func(tx *sqlite.Tx) (any, error) {
 				return s.CreateDraft(tx, ConfigureRound{Number: "2026-09-21-0123", Banker: 1, Heroes: heroes()})
@@ -109,7 +118,8 @@ func TestFractionalMoneyFullLifecycle(t *testing.T) {
 			if err = s.HandleUpdate(update(702, 111, r.OpenedAt+1, "2.10.005")); err != nil {
 				t.Fatal(err)
 			}
-			if acc(t, s, "tg:111").Locked != 10005 {
+			reserved := riskFor(10005, 1.2)
+			if acc(t, s, "tg:111").Locked != reserved {
 				t.Fatal("fractional bet not reserved exactly once")
 			}
 			expectFailure(t, s, func(tx *sqlite.Tx) (any, error) {
@@ -120,8 +130,8 @@ func TestFractionalMoneyFullLifecycle(t *testing.T) {
 			profit := Money(12306)
 			if outcome == "LOSS" {
 				d = damages("12737", "12745")
-				want = 990194
-				profit = -10005
+				want = 988193
+				profit = -12006
 			}
 			if outcome == "VOID" {
 				d = damages("999", "12745")

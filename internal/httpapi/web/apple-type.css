@@ -25,6 +25,10 @@ td { font-size: 13px; }
 fieldset { padding-top: 24px; }
 legend { padding: 0 8px; }
 .panel-heading h3, .limits-panel h3 { font-size: 17px; font-weight: 600; }
+.odds-card { display: grid; grid-template-columns: 1fr; gap: 7px; align-content: center; }
+.odds-card > strong { font-size: 15px; font-weight: 600; }
+.odds-input-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 12px; }
+.odds-input-row .odds-input { flex: 0 0 auto; }
 .summary strong, #round-state { font-weight: 600; }
 .bot-metric .metric-label { font-size: 12px; font-weight: 500; }
 .metric-value, .metric-value h2 { font-size: 24px; font-weight: 600; letter-spacing: -.025em; }
