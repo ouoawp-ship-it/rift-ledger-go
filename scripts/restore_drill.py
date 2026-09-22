@@ -127,7 +127,28 @@ def main():
                     assert db.execute("SELECT state,attempts FROM outbox WHERE key='ambiguous'").fetchone() == ("UNKNOWN", 0)
                     assert db.execute("SELECT COUNT(*) FROM outbox WHERE attempts!=0").fetchone()[0] == 0
                 assert api("operations")["receiver"]["receiver_state"] == "disabled"
-                print(json.dumps({"passed": True, "real_telegram": False, "production_data": False, "offline_verification": checked, "checks": ["online backup copied into fresh data directory", "balance 1120.200 and reserved 100.001 retained", "rules, templates, active round, ledger and offset retained", "credit and settlement replay do not change restored balances", "pending messages not sent; interrupted send becomes UNKNOWN", "post-backup credit correctly excluded; original backup unchanged"]}, ensure_ascii=False, indent=2))
+                # Same data directory must never admit two consumers, even on
+                # another HTTP port. The losing process exits before DB/Bot init.
+                duplicate = subprocess.run([str(server)], env=env | {"DATA_DIR": str(restored), "LISTEN_ADDR": "127.0.0.1:0"},
+                                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
+                assert duplicate.returncode != 0 and "同一数据目录已有服务进程" in duplicate.stderr.decode()
+                crash_credit = credit | {"delta": "0.001"}
+                crash_result = api("adjustments", crash_credit, "committed-before-crash")
+                assert (restored / "rift-ledger.db-wal").stat().st_size > 0
+                crash_baseline = api("state")["accounts"]
+                crash_ledger = api("reconcile")
+                # SIGKILL bypasses graceful shutdown and checkpoint cleanup.
+                process.kill()
+                process.wait(timeout=10)
+                process = start(restored, log)
+                assert api("state")["accounts"] == crash_baseline
+                assert api("reconcile") == crash_ledger
+                assert api("adjustments", credit, "restore-credit-0001") == credit_response
+                assert api("adjustments", crash_credit, "committed-before-crash") == crash_result
+                assert api(path + "/settle", settlement, "restore-settle-0001") == result
+                assert api("state")["accounts"] == crash_baseline
+                assert api("operations")["receiver"]["receiver_state"] == "disabled"
+                print(json.dumps({"passed": True, "real_telegram": False, "production_data": False, "offline_verification": checked, "checks": ["online backup copied into fresh data directory", "balance 1120.200 and reserved 100.001 retained", "rules, templates, active round, ledger and offset retained", "credit and settlement replay do not change restored balances", "pending messages not sent; interrupted send becomes UNKNOWN", "post-backup credit correctly excluded; original backup unchanged", "duplicate process rejected by directory lock", "SIGKILL restart preserves ledger, frozen balances and idempotency"]}, ensure_ascii=False, indent=2))
             finally:
                 stop(process)
 

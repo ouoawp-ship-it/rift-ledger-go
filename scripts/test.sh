@@ -7,6 +7,7 @@ go vet ./...
 go test -race -count=1 -cover ./...
 python3 scripts/reliability_smoke.py
 python3 scripts/restore_drill.py
+python3 scripts/recovery_test.py
 if command -v node >/dev/null 2>&1; then
   node --test scripts/api_client_test.cjs scripts/bot_connection_test.cjs scripts/money_test.cjs
 else

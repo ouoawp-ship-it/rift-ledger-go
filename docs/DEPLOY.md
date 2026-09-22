@@ -46,7 +46,7 @@ sudo journalctl -u rift-ledger-go -n 100 --no-pager
 
 `bash scripts/backup-docker.sh` 调用SQLite `.backup` 创建一致性快照，检查integrity_check，再复制到宿主机backups。无需停止整个服务，但过大的库可能有额外I/O开销，尚未压测。
 
-备份含玩家ID、流水与消息正文，应限制访问并加密存放。保留多个时间点，不要将数据库备份和管理员Token一同公开。需要定时备份时，可由你在服务器配置计划任务；本项目不会擅自注册计划或删除旧备份。
+备份含玩家ID、流水与消息正文，应限制访问并加密存放。保留多个时间点，不要将数据库备份和管理员Token一同公开。第四阶段提供显式安装的systemd定时器、包含配置的成套备份、完整性验证和隔离恢复目录；只有执行 `bash scripts/install-recovery-timer.sh` 才会启用。保留策略只清理本工具自己的已验证恢复包，不删除旧单文件备份。详见 [单机恢复保障](RECOVERY_PHASE4.md)。
 
 ## Docker从备份恢复（高影响操作，务必先确认对象）
 

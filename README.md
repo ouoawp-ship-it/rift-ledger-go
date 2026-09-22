@@ -184,6 +184,8 @@ cd /opt/rift-ledger/rift-ledger-go
 
 以后更新和备份：
 
+第四阶段新增每15分钟成套备份、配置保护、过期检查和无网络恢复副本。已有第三阶段镜像时运行 `bash scripts/install-recovery-timer.sh` 安装定时器；说明与故障处置见 [单机恢复保障](docs/RECOVERY_PHASE4.md)。同机备份不能代替异机容灾。
+
 ```bash
 cd /opt/rift-ledger/rift-ledger-go
 ./scripts/update.sh
