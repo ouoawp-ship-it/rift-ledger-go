@@ -78,3 +78,13 @@ docker compose down
 - `python3 scripts/recovery_test.py`：覆盖成功恢复包、配置变化、容器重启、磁盘不足/写入失败、校验失败、保留策略、并发互斥、损坏/链接/越界文件、拒绝覆盖、恢复副本无Token/无网络、备份过期以及错误输出不泄露密钥。
 - `python3 scripts/restore_drill.py`：真实HTTP创建测试账户及三位小数账目，恢复后保留余额1120.200和冻结100.001；拒绝相同数据目录的第二个进程；另提交0.001后SIGKILL，再启动核对账本和幂等重放。只使用临时库，不连接真实Telegram。
 - 原始结果：[恢复工具故障注入](test-artifacts/phase4-recovery.txt)、[进程及账目恢复](test-artifacts/phase4-restore.json)。未进行真实主机断电、生产磁盘写满、跨机切换或24小时连续观察。
+
+### 服务器验收（2026-09-22 11:08，北京时间）
+
+已部署脚本版本 `7ad17c7`，启用 `rift-ledger-backup.timer`，状态为enabled/active。通过systemd手动触发实际备份单元，Result=success、ExecMainStatus=0，用时1.387秒；此耗时对应当前小库，不是大数据量承诺。安装时发现WorkingDirectory不能使用ExecStart式引号，已修正并增加含空格路径的真实systemd单元校验测试；17项恢复工具测试全部通过。
+
+验收备份为 `backups/recovery/bundle-20260922T030800Z-d7106a945b9944c89474e5fab50a7f7c`，包含数据库、两类环境配置、运行配置、英雄列表、Compose和核验报告，schema6，账本检查通过。定时器下一次日历触发尚未在本次验收中等待，手动触发使用的就是同一service。
+
+另用前一份实际恢复包生成 `/root/rift-phase4-review-20260922/`，启动无网络、无端口、机器人禁用的独立容器，实际HTTP对账4账户、14流水、总余额8198.443，balanced=true。核验后已停止并移除该隔离容器，保留副本和验收记录供检查。
+
+正式应用启动时间仍为 `2026-09-22T02:51:14.815560398Z`，重启次数0；机器人online，队列无积压/待核实，正式对账一致。未更改正式账目或发送测试消息。服务器汇总报告位于 `/root/rift-phase4-acceptance.json`。第四阶段单机恢复保障已部署；异机备份、整机故障接管和长期观察仍未验收。
