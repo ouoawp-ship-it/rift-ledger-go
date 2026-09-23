@@ -463,23 +463,50 @@ func (s *Service) Rows(kind, id string, limit, offset int) (any, error) {
 }
 
 func (s *Service) PlayerSummary(limit, offset int) (any, error) {
+	return s.FilteredPlayerSummary(limit, offset, "all", "")
+}
+
+// Filter before pagination; all counts and rows share the same read snapshot.
+func (s *Service) FilteredPlayerSummary(limit, offset int, balance, search string) (any, error) {
+	where := "a.role='player'"
+	switch balance {
+	case "", "all":
+	case "zero":
+		where += " AND a.balance=0"
+	case "positive":
+		where += " AND a.balance>0"
+	default:
+		return nil, bad("无效的玩家余额筛选")
+	}
+	search = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(search), "@"))
+	if len([]rune(search)) > 80 {
+		return nil, bad("玩家搜索最多80个字符")
+	}
+	var args []any
+	if search != "" {
+		pattern := "%" + strings.NewReplacer(`\`, `\\`, "%", `\%`, "_", `\_`).Replace(search) + "%"
+		where += ` AND (a.id=? OR CAST(a.telegram_id AS TEXT) LIKE ? ESCAPE '\' OR a.name LIKE ? ESCAPE '\' OR u.username LIKE ? ESCAPE '\')`
+		args = append(args, search, pattern, pattern, pattern)
+	}
+	if limit < 1 || limit > 200 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var out any
 	e := s.DB.Read(func(tx *sqlite.Tx) error {
 		active, e := activeRound(tx)
 		if e != nil {
 			return e
 		}
-		rows, e := tx.Query(`SELECT a.id,a.telegram_id,a.name,a.balance,a.locked,a.enabled,COALESCE(u.username,'') AS username,COALESCE(u.first_name,'') AS first_name,COALESCE(u.last_name,'') AS last_name,COALESCE((SELECT SUM(b.stake) FROM bets b WHERE b.account_id=a.id AND b.round_id=? AND b.state='RESERVED'),0) AS round_stake,COALESCE((SELECT group_concat(CAST(b.position AS TEXT)||':'||json_extract(r.heroes,'$['||(b.position-1)||'].name'),'、') FROM bets b JOIN rounds r ON r.id=b.round_id WHERE b.account_id=a.id AND b.round_id=? AND b.state='RESERVED'),'') AS round_content,COALESCE((SELECT SUM(b.game_delta) FROM bets b WHERE b.account_id=a.id AND b.round_id=(SELECT b2.round_id FROM bets b2 JOIN rounds r2 ON r2.id=b2.round_id WHERE b2.account_id=a.id AND r2.state IN ('SETTLED','VOID') ORDER BY b2.settled_at DESC,r2.rowid DESC LIMIT 1)),0) AS last_profit FROM accounts a LEFT JOIN telegram_users u ON u.telegram_user_id=a.telegram_id WHERE a.role='player' ORDER BY a.created_at DESC,a.id LIMIT ? OFFSET ?`, func() string {
-			if active != nil {
-				return active.ID
-			}
-			return ""
-		}(), func() string {
-			if active != nil {
-				return active.ID
-			}
-			return ""
-		}(), limit, offset)
+		roundID := ""
+		if active != nil {
+			roundID = active.ID
+		}
+		queryArgs := append([]any{roundID, roundID}, args...)
+		queryArgs = append(queryArgs, limit, offset)
+		rows, e := tx.Query(`SELECT a.id,a.telegram_id,a.name,a.balance,a.locked,a.enabled,COALESCE(u.username,'') AS username,COALESCE(u.first_name,'') AS first_name,COALESCE(u.last_name,'') AS last_name,COALESCE((SELECT SUM(b.stake) FROM bets b WHERE b.account_id=a.id AND b.round_id=? AND b.state='RESERVED'),0) AS round_stake,COALESCE((SELECT group_concat(CAST(b.position AS TEXT)||':'||json_extract(r.heroes,'$['||(b.position-1)||'].name'),'、') FROM bets b JOIN rounds r ON r.id=b.round_id WHERE b.account_id=a.id AND b.round_id=? AND b.state='RESERVED'),'') AS round_content,COALESCE((SELECT SUM(b.game_delta) FROM bets b WHERE b.account_id=a.id AND b.round_id=(SELECT b2.round_id FROM bets b2 JOIN rounds r2 ON r2.id=b2.round_id WHERE b2.account_id=a.id AND r2.state IN ('SETTLED','VOID') ORDER BY b2.settled_at DESC,r2.rowid DESC LIMIT 1)),0) AS last_profit FROM accounts a LEFT JOIN telegram_users u ON u.telegram_user_id=a.telegram_id WHERE `+where+` ORDER BY a.created_at DESC,a.id LIMIT ? OFFSET ?`, queryArgs...)
 		if e != nil {
 			return e
 		}
@@ -492,7 +519,17 @@ func (s *Service) PlayerSummary(limit, offset int) (any, error) {
 		}
 		displayMoneyRow(stats, "balance", "profit")
 		rows, _ = displayMoneyRows(rows, nil, "balance", "locked", "round_stake", "last_profit")
-		out = map[string]any{"rows": rows, "stats": stats}
+		counts, e := tx.One("SELECT COUNT(*) AS players,COALESCE(SUM(a.balance),0) AS balance FROM accounts a LEFT JOIN telegram_users u ON u.telegram_user_id=a.telegram_id WHERE "+where, args...)
+		if e != nil {
+			return e
+		}
+		balanceCounts, e := tx.One("SELECT COUNT(CASE WHEN balance=0 THEN 1 END) AS zero,COUNT(CASE WHEN balance>0 THEN 1 END) AS positive FROM accounts WHERE role='player'")
+		if e != nil {
+			return e
+		}
+		stats["zero"], stats["positive"] = balanceCounts["zero"], balanceCounts["positive"]
+		displayMoneyRow(counts, "balance")
+		out = map[string]any{"rows": rows, "stats": stats, "filtered": counts}
 		return nil
 	})
 	return out, e

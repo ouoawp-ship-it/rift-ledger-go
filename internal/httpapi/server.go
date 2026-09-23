@@ -226,7 +226,16 @@ func (a *API) route(w http.ResponseWriter, r *http.Request) {
 			v, e := s.Reconcile()
 			a.respond(w, v, e)
 			return
-		case "api/accounts", "api/entries", "api/audit", "api/outbox", "api/bets":
+		case "api/accounts":
+			if s.PlayerOnly {
+				v, e := s.FilteredPlayerSummary(limit, offset, r.URL.Query().Get("balance"), r.URL.Query().Get("q"))
+				a.respond(w, v, e)
+			} else {
+				v, e := s.Rows("accounts", "", limit, offset)
+				a.respond(w, v, e)
+			}
+			return
+		case "api/entries", "api/audit", "api/outbox", "api/bets":
 			v, e := s.Rows(parts[1], r.URL.Query().Get("account_id"), limit, offset)
 			a.respond(w, v, e)
 			return

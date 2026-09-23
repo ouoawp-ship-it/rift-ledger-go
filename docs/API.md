@@ -68,3 +68,10 @@ curl -sS http://127.0.0.1:8080/api/calculate \
 # 玩家历史查询
 
 新增管理员只读接口 `/api/player-search` 与 `/api/player-history`，提供玩家搜索、按日期/结果筛选的下注、积分流水、上下分申请和游标分页。参数及时间/金额口径见 [玩家历史明细](PLAYER_HISTORY.md)。
+
+
+### 玩家余额筛选
+
+玩家模式的 `GET /api/accounts` 支持 `balance=all|zero|positive`（省略时保持全部玩家）、`q`（昵称、用户名或 Telegram ID，最多80字符）、`limit`、`offset`。余额筛选按账面余额判断：零分等于0，有余额大于0，包含0.001分及已冻结余额，与玩家是否停用无关。搜索中的 `%`、`_` 按普通字符处理。
+
+响应保留 `rows`、`stats`；`stats.zero` / `stats.positive` 返回全部玩家的零分/正余额人数；新增 `filtered.players`、`filtered.balance` 为筛选及搜索后的总人数与积分合计，不受分页影响。筛选、汇总及分页读取同一数据库快照。后台默认仅显示有余额玩家，切换筛选或搜索时回到第一页。
